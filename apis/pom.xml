@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.4</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.h.udemy.java.uservices</groupId>
+	<artifactId>parent</artifactId>
+	<version>1.0.0</version>
+	<name>parent</name>
+	<description>AWS iot Poc</description>
+
+	<packaging>pom</packaging>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+
+		<kafka-producer.version>1.0.0</kafka-producer.version>
+		<kafka-consumer.version>1.0.0</kafka-consumer.version>
+		<kafka-model.version>1.0.0</kafka-model.version>
+		<kafka-config-data.version>1.0.0</kafka-config-data.version>
+
+		<saga.version>1.0.0</saga.version>
+
+		<common-domain.version>1.0.0</common-domain.version>
+		<common-dataaccess.version>1.0.0</common-dataaccess.version>
+		<common-application.version>1.0.0</common-application.version>
+		<test-utils.version>1.0.0</test-utils.version>
+
+		<domain.core.version>1.0.0</domain.core.version>
+		<domain.api.service.version>1.0.0</domain.api.service.version>
+
+		<order.application.version>1.0.0</order.application.version>
+		<order.dataaccess.version>1.0.0</order.dataaccess.version>
+		<order.messaging.version>1.0.0</order.messaging.version>
+
+		<payment.domain.core.version>1.0.0</payment.domain.core.version>
+		<payment.domain.service.version>1.0.0</payment.domain.service.version>
+		<payment.dataaccess.version>1.0.0</payment.dataaccess.version>
+		<payment.messaging.version>1.0.0</payment.messaging.version>
+
+		<restaurant.domain.core.version>1.0.0</restaurant.domain.core.version>
+		<restaurant.domain.service.version>1.0.0</restaurant.domain.service.version>
+		<restaurant.dataaccess.version>1.0.0</restaurant.dataaccess.version>
+		<restaurant.messaging.version>1.0.0</restaurant.messaging.version>
+
+		<customer.domain.core.version>1.0.0</customer.domain.core.version>
+		<customer.domain.service.version>1.0.0</customer.domain.service.version>
+		<customer.application.version>1.0.0</customer.application.version>
+		<customer.dataaccess.version>1.0.0</customer.dataaccess.version>
+		<customer.messaging.version>1.0.0</customer.messaging.version>
+
+		<spring-boot-starter-validation.version>3.0.0</spring-boot-starter-validation.version>
+
+		<spring-kafka.version>2.8.2</spring-kafka.version>
+		<kafka-avro-serializer.version>7.0.1</kafka-avro-serializer.version>
+		<avro.version>1.11.0</avro.version>
+
+		<lombok-version>1.18.24</lombok-version>
+		<mapstruct-version>1.5.3.Final</mapstruct-version>
+
+	</properties>
+
+	<modules>
+		<module>order-service</module>
+		<module>common</module>
+        <module>infrastructure</module>
+    </modules>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>kafka-producer</artifactId>
+				<version>${kafka-producer.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>kafka-consumer</artifactId>
+				<version>${kafka-consumer.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>kafka-model</artifactId>
+				<version>${kafka-model.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>kafka-config-data</artifactId>
+				<version>${kafka-config-data.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>saga</artifactId>
+				<version>${saga.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>outbox</artifactId>
+				<version>${saga.version}</version>
+			</dependency>
+
+
+			<!-- COMMON -->
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>common-domain</artifactId>
+				<version>${common-domain.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>common-dataaccess</artifactId>
+				<version>${common-dataaccess.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>common-application</artifactId>
+				<version>${common-application.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>test-utils</artifactId>
+				<version>${test-utils.version}</version>
+			</dependency>
+
+
+			<!-- ORDER -->
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>order-domain-core</artifactId>
+				<version>${domain.core.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>order-domain-service</artifactId>
+				<version>${domain.api.service.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>order-application</artifactId>
+				<version>${order.application.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>order-dataaccess</artifactId>
+				<version>${order.dataaccess.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.h.udemy.java.uservices</groupId>
+				<artifactId>order-messaging</artifactId>
+				<version>${order.messaging.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-validation -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+			<version>${spring-boot-starter-validation.version}</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-logging</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<!--   TEST & JUnit -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+
+		<!-- MAP STRUCT --><!-- https://mvnrepository.com/artifact/org.mapstruct/mapstruct -->
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${mapstruct-version}</version>
+		</dependency>
+
+		<!-- VAVR --><!-- https://mvnrepository.com/artifact/io.vavr/vavr -->
+		<dependency>
+			<groupId>io.vavr</groupId>
+			<artifactId>vavr</artifactId>
+			<version>0.10.4</version>
+		</dependency>
+
+
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<release>17</release>
+
+					<annotationProcessorPaths>
+
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>${mapstruct-version}</version>
+						</path>
+
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M5</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.8</version>
+				<executions>
+					<execution>
+						<id>jacoco-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>

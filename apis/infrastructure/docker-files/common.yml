@@ -1,0 +1,4 @@
+
+networks:
+  u-parent-system:
+    driver: bridge
