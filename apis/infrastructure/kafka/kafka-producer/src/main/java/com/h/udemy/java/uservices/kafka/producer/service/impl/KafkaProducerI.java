@@ -1,6 +1,7 @@
 package com.h.udemy.java.uservices.kafka.producer.service.impl;
 
 import com.h.udemy.java.uservices.kafka.producer.exception.KafkaProducerException;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.springframework.kafka.KafkaException;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
-import javax.annotation.PreDestroy;
 import java.io.Serializable;
 
 @Slf4j

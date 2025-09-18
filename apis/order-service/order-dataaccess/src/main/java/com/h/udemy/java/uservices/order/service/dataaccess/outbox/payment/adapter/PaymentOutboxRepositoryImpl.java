@@ -14,7 +14,7 @@ import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.entity
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.exception.PaymentOutboxNotFoundException;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.mapper.PaymentOutboxDataAccessMapper;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.repository.PaymentOutboxJpaRepository;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentOutboxMessage;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.PaymentOutboxRepository;
 import com.h.udemy.java.uservices.outbox.OutboxStatus;
 import com.h.udemy.java.uservices.saga.SagaStatus;

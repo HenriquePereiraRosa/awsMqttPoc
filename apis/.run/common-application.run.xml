@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="common-application" type="JUnit" factoryName="JUnit">
-    <module name="common-application" />
+    <module name="common-infra" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="domain.config.*" />

@@ -3,7 +3,7 @@ package com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantapp
 import org.springframework.stereotype.Component;
 
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantapproval.entity.ApprovalOutboxEntity;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.approval.OrderApprovalOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.approval.OrderApprovalOutboxMessage;
 
 @Component
 public class ApprovalOutboxDataAccessMapper {

@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static com.h.udemy.java.uservices.order.service.domain.entity.Order.FAILURE_MESSAGE_DELIMITER;
+import static io.micrometer.common.util.StringUtils.isBlank;
 
 @Getter
 @Setter
@@ -55,7 +57,7 @@ public class OrderEntity {
     }
 
     public List<String> getFailureMessagesAsList() {
-        if(this.failureMessages.isEmpty())
+        if(isBlank((this.failureMessages)))
             return new ArrayList<>();
 
         return  new ArrayList<>(Arrays.asList(this.failureMessages

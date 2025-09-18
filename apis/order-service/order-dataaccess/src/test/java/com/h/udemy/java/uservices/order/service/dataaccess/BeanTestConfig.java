@@ -1,6 +1,6 @@
 package com.h.udemy.java.uservices.order.service.dataaccess;
 
-import com.h.udemy.java.uservices.common.dataaccess.repository.RestaurantJpaRepository;
+import com.h.udemy.java.uservices.common.infra.dataaccess.repository.RestaurantJpaRepository;
 import com.h.udemy.java.uservices.order.service.dataaccess.customer.repository.CustomerJpaRepository;
 import com.h.udemy.java.uservices.order.service.dataaccess.order.repository.OrderJpaRepository;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.repository.PaymentOutboxJpaRepository;

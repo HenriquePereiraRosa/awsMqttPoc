@@ -19,7 +19,7 @@
 
         <dependency>
             <groupId>com.h.udemy.java.uservices</groupId>
-            <artifactId>order-domain-service</artifactId>
+            <artifactId>order-domain</artifactId>
         </dependency>
 
         <dependency>

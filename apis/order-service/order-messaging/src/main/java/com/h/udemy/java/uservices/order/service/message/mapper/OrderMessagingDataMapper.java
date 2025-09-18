@@ -6,8 +6,8 @@ import com.h.udemy.java.uservices.kafka.order.avro.model.*;
 import com.h.udemy.java.uservices.order.service.domain.dto.message.CustomerModel;
 import com.h.udemy.java.uservices.order.service.domain.dto.message.PaymentResponse;
 import com.h.udemy.java.uservices.order.service.domain.dto.message.RestaurantApprovalResponse;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.approval.OrderApprovalEventPayload;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentEventPayload;
+import com.h.udemy.java.uservices.order.service.domain.model.approval.OrderApprovalEventPayload;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentEventPayload;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

@@ -1,4 +1,4 @@
-# Microservices: Clean Architecture, DDD, SAGA, Outbox & Kafka
+# AWS MQTT Poc
 
 ## GraphViz to Visualize dependencies:
 [GraphViz](https://github.com/ferstl/depgraph-maven-plugin)

@@ -3,7 +3,7 @@ package com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.mappe
 import org.springframework.stereotype.Component;
 
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.entity.PaymentOutboxEntity;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentOutboxMessage;
 
 @Component
 public class PaymentOutboxDataAccessMapper {

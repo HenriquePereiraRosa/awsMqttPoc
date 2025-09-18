@@ -1,0 +1,82 @@
+package com.h.udemy.java.uservices.infra.exception.handler;
+
+import com.h.udemy.java.uservices.infra.ApiEnvTest;
+import com.h.udemy.java.uservices.infra.BeanTestConfig;
+import com.h.udemy.java.uservices.common.infra.exception.handler.GlobalExceptionHandler;
+import com.h.udemy.java.uservices.common.infra.exception.handler.model.ErrorTo;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.*;
+import jakarta.validation.constraints.Pattern;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ContextConfiguration(classes = {
+        GlobalExceptionHandler.class,
+        BeanTestConfig.class
+})
+class GlobalExceptionHandlerTest extends ApiEnvTest {
+
+    private static final Object[] EMPTY_ARGS = { null, null };
+    private static final String ERROR_MSG = "Exception Message";
+    private static final String ERROR_MSG_EMAIL = "Exception Message - EMAIL INVALID";
+
+    GlobalExceptionHandler handler;
+
+
+    private final Validator validator =
+            Validation.buildDefaultValidatorFactory().getValidator();
+    @Autowired
+    private ApplicationContext appContext;
+
+    @PostConstruct
+    void setup() {
+        handler = new GlobalExceptionHandler();
+    }
+
+    @Test
+    void should_return_500() {
+        ResponseEntity response = handler.handleException(new Exception(ERROR_MSG));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    }
+
+    @Test
+    void should_return_400() {
+        ResponseEntity<ErrorTo> response = handler
+                .handleValidationException(new ValidationException(ERROR_MSG));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ERROR_MSG, response.getBody().message());
+    }
+
+    @Test
+    void when_with_ViolationMessages_should_return_400_with_msgs_concat() {
+        Email email = new Email("invalid.email.server.com");
+        Set<ConstraintViolation<Email>> violations = validator.validate(email);
+
+        ResponseEntity<ErrorTo> response = handler
+                .handleValidationException(new ConstraintViolationException(
+                        new HashSet<ConstraintViolation<?>>(violations)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ERROR_MSG_EMAIL, response.getBody().message());
+    }
+
+    private static class Email{
+        @Pattern(regexp = "^(.+)@(.+)$", message = ERROR_MSG_EMAIL)
+        private String email;
+
+        public Email(String email) {
+            this.email = email;
+        }
+    }
+}

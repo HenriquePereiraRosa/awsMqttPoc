@@ -48,7 +48,7 @@
 
 		<restaurant.domain.core.version>1.0.0</restaurant.domain.core.version>
 		<restaurant.domain.service.version>1.0.0</restaurant.domain.service.version>
-		<restaurant.dataaccess.version>1.0.0</restaurant.dataaccess.version>
+<!--		<restaurant.dataaccess.version>1.0.0</restaurant.dataaccess.version>-->
 		<restaurant.messaging.version>1.0.0</restaurant.messaging.version>
 
 		<customer.domain.core.version>1.0.0</customer.domain.core.version>
@@ -124,13 +124,7 @@
 
 			<dependency>
 				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>common-dataaccess</artifactId>
-				<version>${common-dataaccess.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>common-application</artifactId>
+				<artifactId>common-infra</artifactId>
 				<version>${common-application.version}</version>
 			</dependency>
 
@@ -143,35 +137,29 @@
 
 			<!-- ORDER -->
 
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>order-domain-core</artifactId>
-				<version>${domain.core.version}</version>
-			</dependency>
+		<dependency>
+			<groupId>com.h.udemy.java.uservices</groupId>
+			<artifactId>order-domain</artifactId>
+			<version>${domain.core.version}</version>
+		</dependency>
 
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>order-domain-service</artifactId>
-				<version>${domain.api.service.version}</version>
-			</dependency>
+		<dependency>
+			<groupId>com.h.udemy.java.uservices</groupId>
+			<artifactId>order-application</artifactId>
+			<version>${order.application.version}</version>
+		</dependency>
 
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>order-application</artifactId>
-				<version>${order.application.version}</version>
-			</dependency>
+		<dependency>
+			<groupId>com.h.udemy.java.uservices</groupId>
+			<artifactId>order-dataaccess</artifactId>
+			<version>${order.dataaccess.version}</version>
+		</dependency>
 
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>order-dataaccess</artifactId>
-				<version>${order.dataaccess.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>com.h.udemy.java.uservices</groupId>
-				<artifactId>order-messaging</artifactId>
-				<version>${order.messaging.version}</version>
-			</dependency>
+		<dependency>
+			<groupId>com.h.udemy.java.uservices</groupId>
+			<artifactId>order-messaging</artifactId>
+			<version>${order.messaging.version}</version>
+		</dependency>
 
 		</dependencies>
 	</dependencyManagement>

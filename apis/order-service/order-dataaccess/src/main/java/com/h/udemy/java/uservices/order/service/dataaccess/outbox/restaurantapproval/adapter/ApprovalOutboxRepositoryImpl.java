@@ -13,7 +13,7 @@ import com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantappr
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantapproval.exception.ApprovalOutboxNotFoundException;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantapproval.mapper.ApprovalOutboxDataAccessMapper;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.restaurantapproval.repository.ApprovalOutboxJpaRepository;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.approval.OrderApprovalOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.approval.OrderApprovalOutboxMessage;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.ApprovalOutboxRepository;
 import com.h.udemy.java.uservices.outbox.OutboxStatus;
 import com.h.udemy.java.uservices.saga.SagaStatus;

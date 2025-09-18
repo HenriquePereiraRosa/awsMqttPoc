@@ -5,16 +5,19 @@ import com.h.udemy.java.uservices.order.service.domain.dto.create.CreateOrderCom
 import com.h.udemy.java.uservices.order.service.domain.entity.Customer;
 import com.h.udemy.java.uservices.order.service.domain.entity.Order;
 import com.h.udemy.java.uservices.order.service.domain.entity.Restaurant;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentOutboxMessage;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.CustomerRepository;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.OrderRepository;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.PaymentOutboxRepository;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.RestaurantRepository;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,8 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(SpringExtension.class)
+@EnableAutoConfiguration(exclude = {
+        DataSourceAutoConfiguration.class,
+})
 class OrderControllerV1Test extends EnvConfigTestCase {
 
     private final String baseUrl = "/v1/orders";
@@ -59,7 +64,7 @@ class OrderControllerV1Test extends EnvConfigTestCase {
     @Autowired
     PaymentOutboxRepository paymentOutboxRepository;
 
-    @BeforeAll
+    @BeforeEach
     public void setup() {
 
         when(this.customerRepository.findCustomer(customer.getId().getValue()))

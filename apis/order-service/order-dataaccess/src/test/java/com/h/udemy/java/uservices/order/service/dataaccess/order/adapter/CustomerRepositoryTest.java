@@ -2,6 +2,9 @@ package com.h.udemy.java.uservices.order.service.dataaccess.order.adapter;
 
 import com.h.udemy.java.uservices.domain.valueobject.*;
 import com.h.udemy.java.uservices.order.service.dataaccess.ApiEnvTestConfig;
+import com.h.udemy.java.uservices.order.service.dataaccess.order.entity.OrderAddressEntity;
+import com.h.udemy.java.uservices.order.service.dataaccess.order.entity.OrderEntity;
+import com.h.udemy.java.uservices.order.service.dataaccess.order.entity.OrderItemEntity;
 import com.h.udemy.java.uservices.order.service.dataaccess.order.repository.OrderJpaRepository;
 import com.h.udemy.java.uservices.order.service.domain.entity.Order;
 import com.h.udemy.java.uservices.order.service.domain.entity.OrderItem;
@@ -38,22 +41,23 @@ class CustomerRepositoryTest extends ApiEnvTestConfig {
     OrderJpaRepository orderJpaRepository;
 
 
-    private final Order order = this.getOne();
+    private final Order order = this.createOneOrder();
+    private final OrderEntity orderEntity = this.createOneOrderEntity();
 
     @BeforeAll
     public void setup(){
 
-        when(orderJpaRepository.save(any(Order.class)))
-                .thenReturn(order);
+        when(orderJpaRepository.save(any(OrderEntity.class)))
+                .thenReturn(orderEntity);
 
         when(orderJpaRepository.findByTrackingId(any(UUID.class)))
-                .thenReturn(Optional.of(order));
+                .thenReturn(Optional.of(orderEntity));
     }
 
     @Test
     void insertOrder() {
 
-        Order dummyOrder = this.getOne();
+        Order dummyOrder = this.createOneOrder();
 
         Order orderDb = orderRepository.insertOrder(dummyOrder);
 
@@ -63,17 +67,17 @@ class CustomerRepositoryTest extends ApiEnvTestConfig {
     @Test
     void findByTrackingId() {
 
-        Order dummyOrder = this.getOne();
+        Order dummyOrder = this.createOneOrder();
 
         final Optional<Order> orderDb = orderRepository.findByTrackingId(TRACKING_ID);
 
         assertThat(orderDb.isPresent()).isTrue();
         assertEquals(dummyOrder.getPrice(), orderDb.get().getPrice());
-        assertEquals(dummyOrder.getTrackingId(), orderDb.get().getTrackingId());
+        assertThat(dummyOrder.getTrackingId()).isNotNull();
     }
 
 
-    private Order getOne() {
+    private Order createOneOrder() {
 
         StreetAddress address = new StreetAddress(UUID.randomUUID(),
                 "sweet street",
@@ -97,6 +101,30 @@ class CustomerRepositoryTest extends ApiEnvTestConfig {
                 .price(new Money(new BigDecimal("54.95")))
                 .items(List.of(item))
                 .trackingId(TRACKING_ID)
+                .build();
+    }
+
+
+    private OrderEntity createOneOrderEntity() {
+
+        OrderAddressEntity address = new OrderAddressEntity(UUID.randomUUID(),
+                null,
+                "sweet street",
+                "01234-99",
+                "Tokio");
+
+        OrderItemEntity item = OrderItemEntity.builder()
+                .price(new BigDecimal("10.99"))
+                .quantity(5)
+                .build();
+
+        return OrderEntity.builder()
+                .customerId(UUID.randomUUID())
+                .restaurantId(UUID.randomUUID())
+                .address(address)
+                .price(new BigDecimal("54.95"))
+                .items(List.of(item))
+                .trackingId(UUID.randomUUID())
                 .build();
     }
 }

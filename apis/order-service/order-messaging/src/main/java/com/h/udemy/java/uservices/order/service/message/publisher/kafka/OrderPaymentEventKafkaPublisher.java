@@ -4,10 +4,10 @@ import com.h.udemy.java.uservices.kafka.order.avro.model.PaymentRequestAvroModel
 import com.h.udemy.java.uservices.kafka.producer.KafkaMessageHelper;
 import com.h.udemy.java.uservices.kafka.producer.service.impl.KafkaProducerI;
 import com.h.udemy.java.uservices.order.service.message.mapper.OrderMessagingDataMapper;
-import com.h.udemy.java.uservices.order.service.domain.config.OrderServiceConfigData;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.approval.OrderApprovalOutboxMessage;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentEventPayload;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentOutboxMessage;
+import com.h.udemy.java.uservices.order.service.message.config.OrderServiceConfigData;
+import com.h.udemy.java.uservices.order.service.domain.model.approval.OrderApprovalOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentEventPayload;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentOutboxMessage;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.message.publisher.payment.PaymentRequestMessagePublisher;
 import com.h.udemy.java.uservices.outbox.OutboxStatus;
 import lombok.extern.slf4j.Slf4j;

@@ -10,7 +10,7 @@ import com.h.udemy.java.uservices.order.service.domain.entity.Order;
 import com.h.udemy.java.uservices.order.service.domain.entity.OrderItem;
 import com.h.udemy.java.uservices.order.service.domain.entity.Product;
 import com.h.udemy.java.uservices.order.service.domain.event.OrderCreatedEvent;
-import com.h.udemy.java.uservices.order.service.domain.outbox.model.payment.OrderPaymentOutboxMessage;
+import com.h.udemy.java.uservices.order.service.domain.model.payment.OrderPaymentOutboxMessage;
 import com.h.udemy.java.uservices.order.service.domain.valueobject.OrderItemId;
 import com.h.udemy.java.uservices.order.service.domain.valueobject.StreetAddress;
 import com.h.udemy.java.uservices.outbox.OutboxStatus;

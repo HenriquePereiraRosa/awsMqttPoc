@@ -19,19 +19,13 @@
 
         <dependency>
             <groupId>com.h.udemy.java.uservices</groupId>
-            <artifactId>common-application</artifactId>
+            <artifactId>common-infra</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.h.udemy.java.uservices</groupId>
-            <artifactId>order-domain-service</artifactId>
+            <artifactId>order-domain</artifactId>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.h.udemy.java.uservices</groupId>-->
-<!--            <artifactId>outbox</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -3,13 +3,17 @@ package com.h.udemy.java.uservices.order.service.application.test.util.config;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.message.publisher.payment.PaymentRequestMessagePublisher;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.message.publisher.restaurantapproval.RestaurantApprovalRequestMessagePublisher;
 import com.h.udemy.java.uservices.order.service.domain.ports.output.repository.*;
-import com.h.udemy.java.uservices.outbox.OutboxScheduler;
 import org.mockito.Mockito;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(scanBasePackages = {
         "com.h.udemy.java.uservices",
+})
+@EnableAutoConfiguration(exclude = {
+        DataSourceAutoConfiguration.class,
 })
 public class BeanTestConfig {
 
