@@ -17,6 +17,8 @@
         <module>saga</module>
         <module>kafka</module>
         <module>outbox</module>
+        <module>mqtt</module>
+        <module>iac</module>
     </modules>
 
 </project>

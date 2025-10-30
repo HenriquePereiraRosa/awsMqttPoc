@@ -1,0 +1,94 @@
+name: Terraform Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      service:
+        description: 'Service to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - bootstrap
+          - networking
+          - mqtt
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'us-east-1'
+  AWS_PROFILE: 'cicd_bot'
+  S3_BUCKET: 'awsmqttpoc-terraform-state'
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }} on ${{ github.event.inputs.service }} in ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: apis/infrastructure/iac/terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Bootstrap - Create S3 bucket
+        if: github.event.inputs.service == 'bootstrap' || github.event.inputs.service == 'all'
+        working-directory: apis/infrastructure/iac/terraform/bootstrap
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action }} -auto-approve || true
+
+      - name: Deploy Shared Networking
+        if: github.event.inputs.service == 'networking' || github.event.inputs.service == 'all'
+        working-directory: apis/infrastructure/iac/terraform/shared/networking
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action }} -auto-approve
+
+      - name: Deploy MQTT Service
+        if: github.event.inputs.service == 'mqtt' || github.event.inputs.service == 'all'
+        working-directory: apis/infrastructure/iac/terraform/services/mqtt
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action }} -auto-approve
+
+      - name: Terraform Output
+        if: github.event.inputs.action != 'destroy'
+        run: |
+          echo "✅ Infrastructure ${{ github.event.inputs.action }} completed successfully"
+
+
+
+

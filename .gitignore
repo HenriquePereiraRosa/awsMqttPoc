@@ -1,0 +1,51 @@
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfvars
+*.auto.tfvars
+
+# Do commit the lock file for reproducible builds
+# !.terraform.lock.hcl
+
+# --- AWS Certs/Keys (mTLS) ---
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.pfx
+
+# --- Logs ---
+logs/
+**/logs/
+*.log
+
+# --- Java/Maven/Gradle ---
+target/
+build/
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+
+# --- IDE/Editor ---
+.idea/
+*.iml
+.vscode/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Misc ---
+*.rej
+*.swp
+*.swo
+~$*
+
+

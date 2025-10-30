@@ -14,7 +14,7 @@
 	<artifactId>parent</artifactId>
 	<version>1.0.0</version>
 	<name>parent</name>
-	<description>AWS iot Poc</description>
+	<description>MQTT POC</description>
 
 	<packaging>pom</packaging>
 
@@ -26,6 +26,9 @@
 		<kafka-consumer.version>1.0.0</kafka-consumer.version>
 		<kafka-model.version>1.0.0</kafka-model.version>
 		<kafka-config-data.version>1.0.0</kafka-config-data.version>
+
+		<mqtt-paho-v5.version>1.2.5</mqtt-paho-v5.version>
+		<jackson.version>2.15.2</jackson.version>
 
 		<saga.version>1.0.0</saga.version>
 
@@ -41,6 +44,8 @@
 		<order.dataaccess.version>1.0.0</order.dataaccess.version>
 		<order.messaging.version>1.0.0</order.messaging.version>
 
+		<mqtt.version>1.0.0</mqtt.version>
+
 		<payment.domain.core.version>1.0.0</payment.domain.core.version>
 		<payment.domain.service.version>1.0.0</payment.domain.service.version>
 		<payment.dataaccess.version>1.0.0</payment.dataaccess.version>
@@ -48,7 +53,6 @@
 
 		<restaurant.domain.core.version>1.0.0</restaurant.domain.core.version>
 		<restaurant.domain.service.version>1.0.0</restaurant.domain.service.version>
-<!--		<restaurant.dataaccess.version>1.0.0</restaurant.dataaccess.version>-->
 		<restaurant.messaging.version>1.0.0</restaurant.messaging.version>
 
 		<customer.domain.core.version>1.0.0</customer.domain.core.version>
@@ -159,6 +163,13 @@
 			<groupId>com.h.udemy.java.uservices</groupId>
 			<artifactId>order-messaging</artifactId>
 			<version>${order.messaging.version}</version>
+		</dependency>
+
+		<!-- MQTT -->
+		<dependency>
+			<groupId>com.h.udemy.java.uservices</groupId>
+			<artifactId>mqtt</artifactId>
+			<version>${mqtt.version}</version>
 		</dependency>
 
 		</dependencies>
