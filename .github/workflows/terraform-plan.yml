@@ -1,0 +1,88 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'apis/infrastructure/iac/terraform/**'
+  workflow_dispatch:
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    defaults:
+      run:
+        working-directory: apis/infrastructure/iac/terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init - Networking
+        working-directory: ./shared/networking
+        run: terraform init
+
+      - name: Terraform Plan - Networking
+        working-directory: ./shared/networking
+        run: terraform plan -no-color | tee networking-plan.txt
+        continue-on-error: true
+
+      - name: Terraform Init - MQTT
+        working-directory: ./services/mqtt
+        run: terraform init
+
+      - name: Terraform Plan - MQTT
+        working-directory: ./services/mqtt
+        run: terraform plan -no-color | tee mqtt-plan.txt
+        continue-on-error: true
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let comment = '## Terraform Plan Results\n\n';
+            try {
+              const networking = fs.readFileSync('apis/infrastructure/iac/terraform/shared/networking/networking-plan.txt', 'utf8');
+              comment += '### Shared Networking\n```\n' + networking + '\n```\n\n';
+            } catch (e) {
+              comment += '### Shared Networking\nCould not read plan\n\n';
+            }
+            try {
+              const mqtt = fs.readFileSync('apis/infrastructure/iac/terraform/services/mqtt/mqtt-plan.txt', 'utf8');
+              comment += '### MQTT Service\n```\n' + mqtt + '\n```\n';
+            } catch (e) {
+              comment += '### MQTT Service\nCould not read plan\n';
+            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+
+
+

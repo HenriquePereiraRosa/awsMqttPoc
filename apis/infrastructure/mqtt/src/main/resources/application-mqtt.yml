@@ -1,0 +1,52 @@
+mqtt:
+  # MQTT Configuration (MQTT v5)
+  broker-url: tcp://localhost:1883
+  client-id: ${spring.application.name:default-client}-${random.uuid}
+  
+  # Authentication Options:
+  # 1. mTLS (Mutual TLS) - No username/password needed
+  #    broker-url: ssl://your-broker.com:8883
+  #    username: # Leave empty
+  #    password: # Leave empty
+  #    # Certificates configured via JVM keystore/truststore
+  
+  # 2. TLS + Username/Password
+  #    broker-url: ssl://your-broker.com:8883
+  #    username: your-username
+  #    password: your-password
+  
+  # 3. No encryption (development only)
+  #    broker-url: tcp://localhost:1883
+  #    username: # Leave empty
+  #    password: # Leave empty
+  
+  username: ${MQTT_USERNAME:}
+  password: ${MQTT_PASSWORD:}
+  connection-timeout: 30
+  keep-alive-interval: 60
+  clean-session: true
+  qos: 1
+  retained: false
+  
+  # MQTT v5 Specific Configuration
+  mqtt-v5:
+    session-expiry-interval: 0  # 0 = no expiry
+    receive-maximum: 65535      # No limit
+    maximum-packet-size: 0      # No limit
+    topic-alias-maximum: 0      # No aliases
+    request-response-information: false
+    request-problem-information: true
+    user-properties:
+      application: "mqttpoc"
+      version: "1.0.0"
+    will-delay-interval: 0
+    content-type: "application/json"
+    response-topic: ""
+    correlation-data: ""
+  
+
+logging:
+  level:
+    com.h.udemy.java.uservices.infrastructure.mqtt: DEBUG
+    org.eclipse.paho: INFO
+
