@@ -2,18 +2,20 @@
 # This workflow:
 # 1. Detects changes in any module (order-service, common, infrastructure)
 # 2. Builds only the changed modules and their dependencies
-# 3. Runs tests for changed modules on every commit
+# 3. Runs tests for changed modules on PRs (open and updates)
 
 name: Java Build and Test
 
-# Trigger on every push to any branch
+# Trigger only on Pull Requests
 on:
-  push:
-    branches:
-      - '**'  # Matches all branches
   pull_request:
+    types:
+      - opened      # When PR is first opened
+      - synchronize # When new commits are pushed to PR
+      - reopened    # When PR is reopened
     branches:
-      - '**'  # Matches all branches
+      - main
+      - 'release/**'  # Git-flow pattern: release/v1.0.0, release/2.0.0, etc.
 
 # Environment variables for the workflow
 env:
@@ -136,13 +138,11 @@ jobs:
       # Step 2.8: Run all tests if root pom.xml changed (affects all modules)
       - name: Build and Test All Modules
         if: |
-          github.event_name == 'push' && 
-          (needs.detect-changes.outputs.order-service == 'true' && 
-           needs.detect-changes.outputs.common == 'true' && 
-           needs.detect-changes.outputs.infrastructure == 'true') ||
-          contains(github.event.head_commit.message, '[build-all]')
+          needs.detect-changes.outputs.order-service == 'true' && 
+          needs.detect-changes.outputs.common == 'true' && 
+          needs.detect-changes.outputs.infrastructure == 'true'
         run: |
-          echo "📦 Building ALL modules (root pom.xml changed or [build-all] tag detected)..."
+          echo "📦 Building ALL modules (root pom.xml or multiple modules changed)..."
           mvn clean install -DskipTests=false
       
       # Step 2.9: Generate test reports summary
