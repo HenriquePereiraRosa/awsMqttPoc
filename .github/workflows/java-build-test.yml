@@ -1,0 +1,189 @@
+# Java Build and Test Workflow
+# This workflow:
+# 1. Detects changes in any module (order-service, common, infrastructure)
+# 2. Builds only the changed modules and their dependencies
+# 3. Runs tests for changed modules on every commit
+
+name: Java Build and Test
+
+# Trigger on every push to any branch
+on:
+  push:
+    branches:
+      - '**'  # Matches all branches
+  pull_request:
+    branches:
+      - '**'  # Matches all branches
+
+# Environment variables for the workflow
+env:
+  JAVA_VERSION: '21'
+  MAVEN_VERSION: '3.9.5'
+
+jobs:
+  # Step 1: Detect which modules have changed
+  detect-changes:
+    name: Detect Changed Modules
+    runs-on: ubuntu-latest
+    # Outputs which modules have changed
+    outputs:
+      order-service: ${{ steps.filter.outputs.order-service }}
+      common: ${{ steps.filter.outputs.common }}
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      has-changes: ${{ steps.filter.outputs.has-changes }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need 2 commits to compare (HEAD and HEAD^)
+      
+      - name: Detect changed modules
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          # Base directory for path filtering
+          base: ${{ github.workspace }}
+          # List of filters - one per module
+          filters: |
+            order-service:
+              - 'apis/order-service/**'
+              - 'apis/pom.xml'
+            common:
+              - 'apis/common/**'
+              - 'apis/pom.xml'
+            infrastructure:
+              - 'apis/infrastructure/**'
+              - 'apis/pom.xml'
+          # If root pom.xml changes, build everything
+          list-files: shell
+
+      - name: Show changed modules
+        run: |
+          echo "📦 Changed Modules:"
+          echo "  order-service: ${{ steps.filter.outputs.order-service }}"
+          echo "  common: ${{ steps.filter.outputs.common }}"
+          echo "  infrastructure: ${{ steps.filter.outputs.infrastructure }}"
+          echo "  has-changes: ${{ steps.filter.outputs.has-changes }}"
+
+  # Step 2: Build and test changed modules
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    # Only run if there are changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    # This job needs the detect-changes job to complete first
+    needs: detect-changes
+    
+    # Set working directory to the APIs folder
+    defaults:
+      run:
+        working-directory: apis
+    
+    steps:
+      # Step 2.1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 2.2: Setup Java 21
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'  # Eclipse Temurin (formerly AdoptOpenJDK)
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'  # Cache Maven dependencies for faster builds
+      
+      # Step 2.3: Setup Maven
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: ${{ env.MAVEN_VERSION }}
+      
+      # Step 2.4: Display Java and Maven versions
+      - name: Display versions
+        run: |
+          echo "🔧 Java Version:"
+          java -version
+          echo ""
+          echo "🔧 Maven Version:"
+          mvn -version
+      
+      # Step 2.5: Build and test common module (if changed)
+      # Common is a dependency, so build it first if it changed
+      - name: Build and Test Common
+        if: needs.detect-changes.outputs.common == 'true'
+        run: |
+          echo "📦 Building common module..."
+          mvn clean install -pl common -am -DskipTests=false
+      
+      # Step 2.6: Build and test infrastructure module (if changed)
+      - name: Build and Test Infrastructure
+        if: needs.detect-changes.outputs.infrastructure == 'true'
+        run: |
+          echo "📦 Building infrastructure module..."
+          # Build infrastructure and all its submodules (mqtt, kafka, etc.)
+          mvn clean install -pl infrastructure -am -DskipTests=false
+      
+      # Step 2.7: Build and test order-service module (if changed)
+      # Order-service depends on common, so common must be built first
+      - name: Build and Test Order Service
+        if: needs.detect-changes.outputs.order-service == 'true'
+        run: |
+          echo "📦 Building order-service module..."
+          # Build order-service and all its submodules (order-domain, order-application, etc.)
+          mvn clean install -pl order-service -am -DskipTests=false
+      
+      # Step 2.8: Run all tests if root pom.xml changed (affects all modules)
+      - name: Build and Test All Modules
+        if: |
+          github.event_name == 'push' && 
+          (needs.detect-changes.outputs.order-service == 'true' && 
+           needs.detect-changes.outputs.common == 'true' && 
+           needs.detect-changes.outputs.infrastructure == 'true') ||
+          contains(github.event.head_commit.message, '[build-all]')
+        run: |
+          echo "📦 Building ALL modules (root pom.xml changed or [build-all] tag detected)..."
+          mvn clean install -DskipTests=false
+      
+      # Step 2.9: Generate test reports summary
+      - name: Test Summary
+        if: always()  # Run even if tests fail
+        run: |
+          echo "## 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count test files found
+          TEST_COUNT=$(find . -name "*Test.java" -o -name "*Tests.java" | wc -l)
+          echo "📝 Test files found: $TEST_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List test reports if they exist
+          if [ -d "target/surefire-reports" ] || [ -d "*/target/surefire-reports" ]; then
+            echo "✅ Test reports generated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No test reports found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      # Step 2.10: Upload test results as artifacts (optional)
+      - name: Upload test results
+        if: always()  # Upload even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/target/surefire-reports/**
+            **/target/site/jacoco/**
+          retention-days: 7  # Keep for 7 days
+          if-no-files-found: ignore
+      
+      # Step 2.11: Upload JaCoCo coverage reports (if available)
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            **/target/site/jacoco/**
+          retention-days: 7
+          if-no-files-found: ignore
+
