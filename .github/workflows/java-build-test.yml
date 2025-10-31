@@ -52,12 +52,28 @@ jobs:
           filters: |
             order-service:
               - 'apis/order-service/**'
+              - 'apis/order-service/order-domain/**'
+              - 'apis/order-service/order-application/**'
+              - 'apis/order-service/order-dataaccess/**'
+              - 'apis/order-service/order-messaging/**'
+              - 'apis/order-service/order-container/**'
               - 'apis/pom.xml'
             common:
               - 'apis/common/**'
+              - 'apis/common/common-domain/**'
+              - 'apis/common/common-infra/**'
+              - 'apis/common/test-utils/**'
               - 'apis/pom.xml'
             infrastructure:
               - 'apis/infrastructure/**'
+              - 'apis/infrastructure/kafka/**'
+              - 'apis/infrastructure/kafka/kafka-config-data/**'
+              - 'apis/infrastructure/kafka/kafka-consumer/**'
+              - 'apis/infrastructure/kafka/kafka-model/**'
+              - 'apis/infrastructure/kafka/kafka-producer/**'
+              - 'apis/infrastructure/mqtt/**'
+              - 'apis/infrastructure/outbox/**'
+              - 'apis/infrastructure/saga/**'
               - 'apis/pom.xml'
           # If root pom.xml changes, build everything
           list-files: shell
@@ -118,8 +134,7 @@ jobs:
         if: needs.detect-changes.outputs.common == 'true'
         run: |
           echo "📦 Common module changed - building and testing ALL modules..."
-          echo "   (Common is a shared dependency, so all dependent modules need testing)"
-          mvn clean install -DskipTests=false
+          mvn clean verify
       
       # Step 2.6: Build and test entire project if multiple modules changed
       - name: Build and Test All (Multiple Modules Changed)
@@ -129,7 +144,7 @@ jobs:
             needs.detect-changes.outputs.infrastructure == 'true'))
         run: |
           echo "📦 Multiple modules changed - building and testing ALL modules..."
-          mvn clean install -DskipTests=false
+          mvn clean verify
       
       # Step 2.7: Build and test infrastructure module (if only infrastructure changed)
       - name: Build and Test Infrastructure
@@ -139,8 +154,7 @@ jobs:
           needs.detect-changes.outputs.order-service != 'true'
         run: |
           echo "📦 Building infrastructure module..."
-          # Build infrastructure and all its submodules (mqtt, kafka, etc.)
-          mvn clean install -pl infrastructure -am -DskipTests=false
+          mvn clean verify -pl infrastructure -am -DskipTests=false -Dmaven.test.skip=false
       
       # Step 2.8: Build and test order-service module (if only order-service changed)
       - name: Build and Test Order Service
@@ -150,8 +164,7 @@ jobs:
           needs.detect-changes.outputs.infrastructure != 'true'
         run: |
           echo "📦 Building order-service module..."
-          # Build order-service and all its submodules (order-domain, order-application, etc.)
-          mvn clean install -pl order-service -am -DskipTests=false
+          mvn clean verify -pl order-service -am
       
       # Step 2.9: Generate test reports summary
       - name: Test Summary
