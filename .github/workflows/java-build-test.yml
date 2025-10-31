@@ -32,7 +32,7 @@ jobs:
       order-service: ${{ steps.filter.outputs.order-service }}
       common: ${{ steps.filter.outputs.common }}
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
-      has-changes: ${{ steps.filter.outputs.any_changed }}
+      has-changes: ${{ steps.filter.outputs.changes != '[]' }}
     
     steps:
       - name: Checkout code
@@ -44,10 +44,8 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # For PRs, compare against the base branch SHA (usually main)
-          base: ${{ github.event.pull_request.base.sha }}
-          # Compare PR head SHA against base branch
-          ref: ${{ github.event.pull_request.head.sha }}
+          # For PR events, paths-filter automatically compares PR head vs base branch
+          # No need to specify 'base' or 'ref' - they're ignored for PR events anyway
           # List of filters - one per module
           filters: |
             order-service:
@@ -90,8 +88,8 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
-    # Only run if there are changes
-    if: needs.detect-changes.outputs.has-changes == 'true'
+    # Only run if there are changes detected
+    if: needs.detect-changes.outputs.has-changes != '[]' && needs.detect-changes.outputs.has-changes != ''
     # This job needs the detect-changes job to complete first
     needs: detect-changes
     
