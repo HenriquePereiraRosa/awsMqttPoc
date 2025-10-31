@@ -32,7 +32,7 @@ jobs:
       order-service: ${{ steps.filter.outputs.order-service }}
       common: ${{ steps.filter.outputs.common }}
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
-      has-changes: ${{ steps.filter.outputs.has-changes }}
+      has-changes: ${{ steps.filter.outputs.any_changed }}
     
     steps:
       - name: Checkout code
@@ -44,10 +44,10 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # For PRs, compare against the base branch (usually main)
-          base-ref: ${{ github.event.pull_request.base.ref }}
-          # Compare PR head against base branch
-          head-ref: ${{ github.event.pull_request.head.ref }}
+          # For PRs, compare against the base branch SHA (usually main)
+          base: ${{ github.event.pull_request.base.sha }}
+          # Compare PR head SHA against base branch
+          ref: ${{ github.event.pull_request.head.sha }}
           # List of filters - one per module
           filters: |
             order-service:
