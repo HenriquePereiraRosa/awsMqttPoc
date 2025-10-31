@@ -38,14 +38,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Need 2 commits to compare (HEAD and HEAD^)
+          fetch-depth: 0  # Fetch full history for merge-base comparison
       
       - name: Detect changed modules
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # Base directory for path filtering
-          base: ${{ github.workspace }}
+          # For PRs, compare against the base branch (usually main)
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          # Compare PR head against base branch
+          head-ref: ${{ github.event.pull_request.head.ref }}
           # List of filters - one per module
           filters: |
             order-service:
@@ -110,40 +112,46 @@ jobs:
           echo "🔧 Maven Version:"
           mvn -version
       
-      # Step 2.5: Build and test common module (if changed)
-      # Common is a dependency, so build it first if it changed
-      - name: Build and Test Common
+      # Step 2.5: Build and test entire project if common module changed
+      # Common is a shared dependency, so ALL modules need to be tested
+      - name: Build and Test All (Common Changed)
         if: needs.detect-changes.outputs.common == 'true'
         run: |
-          echo "📦 Building common module..."
-          mvn clean install -pl common -am -DskipTests=false
+          echo "📦 Common module changed - building and testing ALL modules..."
+          echo "   (Common is a shared dependency, so all dependent modules need testing)"
+          mvn clean install -DskipTests=false
       
-      # Step 2.6: Build and test infrastructure module (if changed)
+      # Step 2.6: Build and test entire project if multiple modules changed
+      - name: Build and Test All (Multiple Modules Changed)
+        if: |
+          needs.detect-changes.outputs.common != 'true' &&
+          ((needs.detect-changes.outputs.order-service == 'true' && 
+            needs.detect-changes.outputs.infrastructure == 'true'))
+        run: |
+          echo "📦 Multiple modules changed - building and testing ALL modules..."
+          mvn clean install -DskipTests=false
+      
+      # Step 2.7: Build and test infrastructure module (if only infrastructure changed)
       - name: Build and Test Infrastructure
-        if: needs.detect-changes.outputs.infrastructure == 'true'
+        if: |
+          needs.detect-changes.outputs.common != 'true' &&
+          needs.detect-changes.outputs.infrastructure == 'true' &&
+          needs.detect-changes.outputs.order-service != 'true'
         run: |
           echo "📦 Building infrastructure module..."
           # Build infrastructure and all its submodules (mqtt, kafka, etc.)
           mvn clean install -pl infrastructure -am -DskipTests=false
       
-      # Step 2.7: Build and test order-service module (if changed)
-      # Order-service depends on common, so common must be built first
+      # Step 2.8: Build and test order-service module (if only order-service changed)
       - name: Build and Test Order Service
-        if: needs.detect-changes.outputs.order-service == 'true'
+        if: |
+          needs.detect-changes.outputs.common != 'true' &&
+          needs.detect-changes.outputs.order-service == 'true' &&
+          needs.detect-changes.outputs.infrastructure != 'true'
         run: |
           echo "📦 Building order-service module..."
           # Build order-service and all its submodules (order-domain, order-application, etc.)
           mvn clean install -pl order-service -am -DskipTests=false
-      
-      # Step 2.8: Run all tests if root pom.xml changed (affects all modules)
-      - name: Build and Test All Modules
-        if: |
-          needs.detect-changes.outputs.order-service == 'true' && 
-          needs.detect-changes.outputs.common == 'true' && 
-          needs.detect-changes.outputs.infrastructure == 'true'
-        run: |
-          echo "📦 Building ALL modules (root pom.xml or multiple modules changed)..."
-          mvn clean install -DskipTests=false
       
       # Step 2.9: Generate test reports summary
       - name: Test Summary
