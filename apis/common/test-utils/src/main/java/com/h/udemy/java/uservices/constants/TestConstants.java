@@ -13,6 +13,8 @@ public interface TestConstants {
     UUID PRODUCT_ID = UUID.fromString("ae15c1e1-86a9-48cf-87fd-11f5b16c404a");
     UUID SAGA_ID = UUID.fromString("ae15c1e1-86a9-48cf-87fd-11f5b16c404a");
     UUID PAYMENT_ID = UUID.fromString("ae15c1e1-86a9-48cf-87fd-11f5b16c404a");
+    UUID CREDIT_ENTRY_ID = UUID.randomUUID();
+    UUID CREDIT_HISTORY_ID = UUID.randomUUID();
 
     BigDecimal PRICE = new BigDecimal("100");
     double ERROR_PRICE = -99.999;
