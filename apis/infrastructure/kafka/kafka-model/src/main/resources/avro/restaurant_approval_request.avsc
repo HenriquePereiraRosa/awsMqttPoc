@@ -47,7 +47,13 @@
                     "name":"Product",
                     "type":"record",
                     "fields":[
-                        {"name":"id", "type": "string", "logicalType": "uuid"},
+                        {
+                            "name":"id",
+                            "type": {
+                                "type": "string",
+                                "logicalType": "uuid"
+                            }
+                        },
                         {"name":"quantity", "type": "int"}
                     ]
                 }
