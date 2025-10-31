@@ -18,7 +18,7 @@
         <module>kafka</module>
         <module>outbox</module>
         <module>mqtt</module>
-        <module>iac</module>
+        <!-- IAC module removed: Terraform is managed separately, not via Maven -->
     </modules>
 
 </project>

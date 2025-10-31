@@ -3,91 +3,34 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.h.udemy.java.uservices</groupId>
-        <artifactId>infrastructure</artifactId>
-        <version>1.0.0</version>
-    </parent>
-
+    
+    <!-- 
+    ⚠️ IMPORTANT: This module is NOT part of Maven build lifecycle!
+    
+    IAC (Infrastructure as Code) is managed separately using Terraform CLI.
+    This POM exists only for documentation/reference purposes.
+    
+    To use Terraform:
+    1. Install Terraform CLI: https://www.terraform.io/downloads
+    2. Navigate to: apis/infrastructure/iac/terraform/
+    3. Run commands directly:
+       - terraform init
+       - terraform plan
+       - terraform apply
+    
+    See: terraform/README.md for deployment instructions
+    -->
+    
+    <groupId>com.h.udemy.java.uservices</groupId>
     <artifactId>iac</artifactId>
-    <packaging>jar</packaging>
-
-    <properties>
-        <terraform.version>1.5.0</terraform.version>
-        <maven-exec-plugin.version>3.1.0</maven-exec-plugin.version>
-    </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${maven-exec-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>terraform-init</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>terraform</executable>
-                            <workingDirectory>${project.basedir}/src/main/terraform</workingDirectory>
-                            <arguments>
-                                <argument>init</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>terraform-plan</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>terraform</executable>
-                            <workingDirectory>${project.basedir}/src/main/terraform</workingDirectory>
-                            <arguments>
-                                <argument>plan</argument>
-                                <argument>-var-file=terraform.tfvars</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>terraform-apply</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>terraform</executable>
-                            <workingDirectory>${project.basedir}/src/main/terraform</workingDirectory>
-                            <arguments>
-                                <argument>apply</argument>
-                                <argument>-auto-approve</argument>
-                                <argument>-var-file=terraform.tfvars</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>terraform-destroy</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>terraform</executable>
-                            <workingDirectory>${project.basedir}/src/main/terraform</workingDirectory>
-                            <arguments>
-                                <argument>destroy</argument>
-                                <argument>-auto-approve</argument>
-                                <argument>-var-file=terraform.tfvars</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    
+    <name>IAC - Infrastructure as Code (Terraform)</name>
+    <description>
+        Infrastructure as Code using Terraform.
+        This module is NOT part of Maven build lifecycle.
+        Use Terraform CLI directly to manage infrastructure.
+    </description>
 
 </project>

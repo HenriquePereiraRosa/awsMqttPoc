@@ -41,13 +41,8 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-
         <!-- TEST DEPENDENCIES-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-
+        <!-- spring-boot-starter-test is already inherited from parent POM -->
         <dependency>
             <groupId>com.h.udemy.java.uservices</groupId>
             <artifactId>test-utils</artifactId>
