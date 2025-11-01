@@ -288,6 +288,24 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M5</version>
+				<configuration>
+					<!-- Include integration tests (*IT.java) in addition to unit tests -->
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+						<include>**/*IT.java</include>
+					</includes>
+					<!-- Generate HTML reports with detailed test information -->
+					<reportFormat>xml</reportFormat>
+					<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+						<disable>false</disable>
+						<version>3.0</version>
+						<usePhrasedFileName>false</usePhrasedFileName>
+						<usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+						<usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+						<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+					</statelessTestsetReporter>
+				</configuration>
 			</plugin>
 
 			<plugin>
@@ -303,8 +321,29 @@
 					</execution>
 					<execution>
 						<id>jacoco-report</id>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
+						</goals>
+						<configuration>
+							<!-- Generate HTML reports for code coverage -->
+							<outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Generate HTML reports for test results -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>3.2.7</version>
+				<executions>
+					<execution>
+						<id>generate-test-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-only</goal>
 						</goals>
 					</execution>
 				</executions>

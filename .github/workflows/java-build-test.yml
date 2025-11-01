@@ -99,7 +99,6 @@ jobs:
         image: docker:24-dind
         options: >-
           --privileged
-          --network host
         env:
           DOCKER_TLS_CERTDIR: /certs
       
@@ -187,8 +186,14 @@ jobs:
       
       # Step 2.9: Generate test reports summary
       - name: Test Summary
-        if: always()  # Run even if tests fail
+        if: always() && (success() || failure())  # Run even if tests fail, but only if build ran
         run: |
+          # Check if apis directory exists (build ran)
+          if [ ! -d "apis" ]; then
+            echo "⚠️ Build did not run - skipping test summary"
+            exit 0
+          fi
+          cd apis || exit 0
           echo "## 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
@@ -256,8 +261,14 @@ jobs:
       
       # Step 2.10: Generate HTML test reports
       - name: Generate HTML Test Reports
-        if: always()
+        if: always() && success() || failure()
         run: |
+          # Check if apis directory exists (build ran)
+          if [ ! -d "apis" ]; then
+            echo "⚠️ Build did not run - skipping report generation"
+            exit 0
+          fi
+          cd apis || exit 0
           echo "📊 Generating HTML test reports..."
           mvn surefire-report:report-only -q || echo "Some reports may have failed to generate"
       
@@ -268,16 +279,22 @@ jobs:
         with:
           name: test-results-and-reports
           path: |
-            **/target/surefire-reports/**
-            **/target/site/jacoco/**
-            **/target/site/surefire-report.html
+            apis/**/target/surefire-reports/**
+            apis/**/target/site/jacoco/**
+            apis/**/target/site/surefire-report.html
           retention-days: 30  # Keep for 30 days
           if-no-files-found: ignore
       
       # Step 2.12: Generate and display report links
       - name: Generate Report Links
-        if: always()
+        if: always() && success() || failure()
         run: |
+          # Check if apis directory exists (build ran)
+          if [ ! -d "apis" ]; then
+            echo "⚠️ Build did not run - skipping report links"
+            exit 0
+          fi
+          cd apis || exit 0
           echo "## 📋 Test & Coverage Reports (HTML)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 How to View Reports" >> $GITHUB_STEP_SUMMARY
