@@ -93,6 +93,19 @@ jobs:
     # This job needs the detect-changes job to complete first
     needs: detect-changes
     
+    # Docker service for tests that need Docker (Testcontainers, etc.)
+    services:
+      docker:
+        image: docker:24-dind
+        options: >-
+          --privileged
+          --network host
+        env:
+          DOCKER_TLS_CERTDIR: /certs
+      
+      # PostgreSQL is managed by Testcontainers for integration tests
+      # No need for a separate postgres service - Testcontainers will start its own container
+    
     # Set working directory to the APIs folder
     defaults:
       run:
@@ -117,7 +130,7 @@ jobs:
         with:
           maven-version: ${{ env.MAVEN_VERSION }}
       
-      # Step 2.4: Display Java and Maven versions
+      # Step 2.4: Display versions (Java, Maven, Docker)
       - name: Display versions
         run: |
           echo "🔧 Java Version:"
@@ -125,6 +138,10 @@ jobs:
           echo ""
           echo "🔧 Maven Version:"
           mvn -version
+          echo ""
+          echo "🐳 Docker Version:"
+          docker --version || echo "Docker not available"
+          docker compose version || echo "Docker Compose not available"
       
       # Step 2.5: Build and test entire project if common module changed
       # Common is a shared dependency, so ALL modules need to be tested
@@ -132,6 +149,7 @@ jobs:
         if: needs.detect-changes.outputs.common == 'true'
         run: |
           echo "📦 Common module changed - building and testing ALL modules..."
+          echo "🧪 Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify
       
       # Step 2.6: Build and test entire project if multiple modules changed
@@ -142,6 +160,7 @@ jobs:
             needs.detect-changes.outputs.infrastructure == 'true'))
         run: |
           echo "📦 Multiple modules changed - building and testing ALL modules..."
+          echo "🧪 Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify
       
       # Step 2.7: Build and test infrastructure module (if only infrastructure changed)
@@ -152,7 +171,7 @@ jobs:
           needs.detect-changes.outputs.order-service != 'true'
         run: |
           echo "📦 Building infrastructure module..."
-          mvn clean verify -pl infrastructure -am -DskipTests=false -Dmaven.test.skip=false
+          mvn clean verify -pl infrastructure -am
       
       # Step 2.8: Build and test order-service module (if only order-service changed)
       - name: Build and Test Order Service
@@ -162,6 +181,8 @@ jobs:
           needs.detect-changes.outputs.infrastructure != 'true'
         run: |
           echo "📦 Building order-service module..."
+          echo "🧪 Running tests (including integration tests with Testcontainers)..."
+          echo "   Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify -pl order-service -am
       
       # Step 2.9: Generate test reports summary
@@ -172,8 +193,58 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Count test files found
-          TEST_COUNT=$(find . -name "*Test.java" -o -name "*Tests.java" | wc -l)
+          TEST_COUNT=$(find . -name "*Test.java" -o -name "*Tests.java" -o -name "*IT.java" | wc -l)
           echo "📝 Test files found: $TEST_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse and display test timing from surefire reports
+          echo "### ⏱️ Test Execution Times" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '#### Test Suites Summary' >> $GITHUB_STEP_SUMMARY
+          echo '| Test Suite | Total Time | Tests Run | Failures | Errors |' >> $GITHUB_STEP_SUMMARY
+          echo '|------------|------------|-----------|----------|--------|' >> $GITHUB_STEP_SUMMARY
+          
+          for report in $(find . -name "TEST-*.xml" -path "*/target/surefire-reports/*" 2>/dev/null); do
+            if [ -f "$report" ]; then
+              SUITE_NAME=$(grep -oP 'name="\K[^"]+' "$report" | head -1)
+              TOTAL_TIME=$(grep -oP 'time="\K[^"]+' "$report" | head -1)
+              TESTS=$(grep -oP 'tests="\K[^"]+' "$report" | head -1)
+              FAILURES=$(grep -oP 'failures="\K[^"]+' "$report" | head -1)
+              ERRORS=$(grep -oP 'errors="\K[^"]+' "$report" | head -1)
+              echo "| $SUITE_NAME | ${TOTAL_TIME}s | $TESTS | $FAILURES | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Individual Test Timing" >> $GITHUB_STEP_SUMMARY
+          echo '| Test Class | Test Method | Time (s) | Status |' >> $GITHUB_STEP_SUMMARY
+          echo '|------------|-------------|----------|--------|' >> $GITHUB_STEP_SUMMARY
+          
+          for report in $(find . -name "TEST-*.xml" -path "*/target/surefire-reports/*" 2>/dev/null); do
+            if [ -f "$report" ]; then
+              # Extract individual test cases with timing
+              grep -oP '<testcase[^>]*>' "$report" | while read -r testcase; do
+                TEST_NAME=$(echo "$testcase" | grep -oP 'name="\K[^"]+' | head -1)
+                CLASS_NAME=$(echo "$testcase" | grep -oP 'classname="\K[^"]+' | head -1)
+                TEST_TIME=$(echo "$testcase" | grep -oP 'time="\K[^"]+' | head -1)
+                
+                # Determine status
+                if echo "$testcase" | grep -q 'failure'; then
+                  STATUS="❌ FAILURE"
+                elif echo "$testcase" | grep -q 'error'; then
+                  STATUS="⚠️ ERROR"
+                else
+                  STATUS="✅ PASSED"
+                fi
+                
+                # Extract short class name (last part after dot)
+                SHORT_CLASS=$(echo "$CLASS_NAME" | sed 's/.*\.//')
+                
+                echo "| $SHORT_CLASS | $TEST_NAME | ${TEST_TIME:-0}s | $STATUS |" >> $GITHUB_STEP_SUMMARY
+              done
+            fi
+          done
+          
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # List test reports if they exist
@@ -183,26 +254,78 @@ jobs:
             echo "⚠️ No test reports found" >> $GITHUB_STEP_SUMMARY
           fi
       
-      # Step 2.10: Upload test results as artifacts (optional)
-      - name: Upload test results
+      # Step 2.10: Generate HTML test reports
+      - name: Generate HTML Test Reports
+        if: always()
+        run: |
+          echo "📊 Generating HTML test reports..."
+          mvn surefire-report:report-only -q || echo "Some reports may have failed to generate"
+      
+      # Step 2.11: Upload test results and reports (includes HTML reports)
+      - name: Upload test results and reports
         if: always()  # Upload even if tests fail
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-and-reports
           path: |
             **/target/surefire-reports/**
             **/target/site/jacoco/**
-          retention-days: 7  # Keep for 7 days
+            **/target/site/surefire-report.html
+          retention-days: 30  # Keep for 30 days
           if-no-files-found: ignore
       
-      # Step 2.11: Upload JaCoCo coverage reports (if available)
-      - name: Upload coverage reports
+      # Step 2.12: Generate and display report links
+      - name: Generate Report Links
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            **/target/site/jacoco/**
-          retention-days: 7
-          if-no-files-found: ignore
+        run: |
+          echo "## 📋 Test & Coverage Reports (HTML)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 How to View Reports" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to the **Artifacts** section at the bottom of this workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Download the \`test-results-and-reports\` artifact" >> $GITHUB_STEP_SUMMARY
+          echo "3. Extract the ZIP file" >> $GITHUB_STEP_SUMMARY
+          echo "4. Open the HTML reports in your browser:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📊 Available HTML Reports:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List Surefire HTML reports (test results with timing)
+          SUREFIRE_HTML_COUNT=0
+          for report in $(find . -path "*/target/site/surefire-report.html" 2>/dev/null); do
+            SUREFIRE_HTML_COUNT=$((SUREFIRE_HTML_COUNT + 1))
+            MODULE=$(echo "$report" | sed 's|.*/apis/\([^/]*\)/.*|\1|')
+            echo "- **Test Results**: \`$report\` - Shows test execution times and results" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          if [ $SUREFIRE_HTML_COUNT -eq 0 ]; then
+            echo "- ⚠️ No Surefire HTML reports found (XML reports available in \`target/surefire-reports/\`)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List JaCoCo HTML reports (code coverage)
+          JACOCO_COUNT=0
+          for report in $(find . -path "*/target/site/jacoco/index.html" 2>/dev/null); do
+            JACOCO_COUNT=$((JACOCO_COUNT + 1))
+            MODULE=$(echo "$report" | sed 's|.*/apis/\([^/]*\)/.*|\1|')
+            echo "- **Code Coverage**: \`$report\` - Shows code coverage metrics (lines, branches, instructions)" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          if [ $JACOCO_COUNT -eq 0 ]; then
+            echo "- ⚠️ No JaCoCo HTML reports found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Test HTML Reports: $SUREFIRE_HTML_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage HTML Reports: $JACOCO_COUNT" >> $GITHUB_STEP_SUMMARY
+          
+          # Count XML/TXT reports
+          XML_COUNT=$(find . -name "TEST-*.xml" -path "*/target/surefire-reports/*" 2>/dev/null | wc -l)
+          TXT_COUNT=$(find . -name "*.txt" -path "*/target/surefire-reports/*" 2>/dev/null | wc -l)
+          
+          echo "- XML Test Reports: $XML_COUNT files" >> $GITHUB_STEP_SUMMARY
+          echo "- Text Test Reports: $TXT_COUNT files" >> $GITHUB_STEP_SUMMARY
 

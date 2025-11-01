@@ -1,0 +1,19 @@
+# Jenkins Service Configuration
+project_name  = "awsmqttpoc"
+environment   = "dev"
+aws_region    = "us-east-1"
+aws_profile   = "cicd_bot"
+
+# Instance configuration
+jenkins_instance_type = "t3.medium"  # t3.medium (2 vCPU, 4GB RAM) - good for small/medium projects
+jenkins_volume_size   = 30            # GB - enough for Jenkins + build artifacts
+
+# Auto-stop configuration
+jenkins_idle_timeout = 900  # 15 minutes in seconds (900)
+
+# Network configuration
+assign_elastic_ip = true    # Keep same IP when stopped/started (recommended)
+
+# SSH access (optional - leave empty if not needed)
+key_pair_name = ""  # e.g., "my-key-pair" if you want SSH access
+
