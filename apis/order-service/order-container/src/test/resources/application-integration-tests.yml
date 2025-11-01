@@ -1,0 +1,77 @@
+spring:
+  datasource:
+    # Connection properties will be overridden by Testcontainers
+    # These are fallback values that will be replaced at runtime
+    url: jdbc:postgresql://localhost:5432/ordering_db?currentSchema=order
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: none  # We use init-schema.sql, so disable auto DDL
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:init-schema.sql
+      continue-on-error: false
+      separator: ;
+
+kafka-config:
+  # Kafka bootstrap servers will be overridden by Testcontainers
+  bootstrap-servers: localhost:9092
+  schema-registry-url-key: schema.registry.url
+  # Schema Registry URL - will be overridden if Schema Registry Testcontainer is added
+  schema-registry-url: http://localhost:8081
+  num-of-partitions: 1  # Single partition for tests
+  replication-factor: 1  # Single broker for tests
+
+kafka-producer-config:
+  key-serializer-class: org.apache.kafka.common.serialization.StringSerializer
+  value-serializer-class: io.confluent.kafka.serializers.KafkaAvroSerializer
+  compression-type: snappy
+  acks: all
+  batch-size: 16384
+  batch-size-boost-factor: 100
+  linger-ms: 5
+  request-timeout-ms: 60000
+  retry-count: 5
+
+kafka-consumer-config:
+  key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+  payment-consumer-group-id: payment-topic-consumer
+  restaurant-approval-consumer-group-id: restaurant-approval-topic-consumer
+  customer-group-id: customer-topic-consumer
+  auto-offset-reset: earliest
+  specific-avro-reader-key: specific.avro.reader
+  specific-avro-reader: true
+  batch-listener: true
+  auto-startup: true
+  concurrency-level: 1  # Reduced for tests
+  session-timeout-ms: 10000
+  heartbeat-interval-ms: 3000
+  max-poll-interval-ms: 300000
+  max-poll-records: 500
+  max-partition-fetch-bytes-default: 1048576
+  max-partition-fetch-bytes-boost-factor: 1
+  poll-timeout-ms: 2000
+
+logging:
+  level:
+    root: INFO
+    com.h.udemy.java.uservices: DEBUG
+    org.springframework.jdbc: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.apache.kafka: INFO
+    org.testcontainers: INFO
+

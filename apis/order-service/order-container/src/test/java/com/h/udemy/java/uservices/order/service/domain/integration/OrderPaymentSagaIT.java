@@ -3,6 +3,7 @@ package com.h.udemy.java.uservices.order.service.domain.integration;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.entity.PaymentOutboxEntity;
 import com.h.udemy.java.uservices.order.service.dataaccess.outbox.payment.repository.PaymentOutboxJpaRepository;
 import com.h.udemy.java.uservices.order.service.domain.OrderServiceApi;
+import com.h.udemy.java.uservices.order.service.domain.integration.config.PostgresTestcontainersConfig;
 import com.h.udemy.java.uservices.order.service.domain.saga.OrderPaymentSaga;
 import com.h.udemy.java.uservices.saga.SagaStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
@@ -25,6 +27,7 @@ import static com.h.udemy.java.uservices.saga.order.SagaConstants.ORDER_SAGA_NAM
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest(classes = OrderServiceApi.class)
+@ContextConfiguration(initializers = PostgresTestcontainersConfig.Initializer.class)
 @Sql(value = {"classpath:sql/OrderPaymentSagaTestSetup.sql"})
 @Sql(value = {"classpath:sql/OrderPaymentSagaTestCleanup.sql"},
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
