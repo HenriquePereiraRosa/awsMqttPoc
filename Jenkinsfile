@@ -28,6 +28,7 @@ pipeline {
     environment {
         PROJECT_ROOT = "${WORKSPACE}"
         JAVA_HOME = '/opt/java/openjdk'
+        PATH = "/opt/java/openjdk/bin:${tool('maven-3.9')}/bin:${env.PATH}"
         MAVEN_OPTS = '-Xmx2048m -XX:MaxPermSize=512m'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
     }
