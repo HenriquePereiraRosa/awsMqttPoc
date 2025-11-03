@@ -102,10 +102,7 @@ jobs:
         env:
           DOCKER_TLS_CERTDIR: /certs
       
-      # PostgreSQL is managed by Testcontainers for integration tests
-      # No need for a separate postgres service - Testcontainers will start its own container
-    
-    # Set working directory to the APIs folder
+     # Set working directory to the APIs folder
     defaults:
       run:
         working-directory: apis
@@ -148,7 +145,6 @@ jobs:
         if: needs.detect-changes.outputs.common == 'true'
         run: |
           echo "📦 Common module changed - building and testing ALL modules..."
-          echo "🧪 Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify
       
       # Step 2.6: Build and test entire project if multiple modules changed
@@ -159,7 +155,6 @@ jobs:
             needs.detect-changes.outputs.infrastructure == 'true'))
         run: |
           echo "📦 Multiple modules changed - building and testing ALL modules..."
-          echo "🧪 Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify
       
       # Step 2.7: Build and test infrastructure module (if only infrastructure changed)
@@ -181,7 +176,6 @@ jobs:
         run: |
           echo "📦 Building order-service module..."
           echo "🧪 Running tests (including integration tests with Testcontainers)..."
-          echo "   Testcontainers will automatically start PostgreSQL container for integration tests"
           mvn clean verify -pl order-service -am
       
       # Step 2.9: Generate test reports summary

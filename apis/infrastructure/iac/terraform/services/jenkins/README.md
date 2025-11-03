@@ -32,19 +32,19 @@ terraform init
 
 ### 2. Configure Variables
 
-Copy the example tfvars file:
+The Jenkins module uses its own `terraform.tfvars` file (located in this directory) which contains only variables relevant to Jenkins.
+
+**For Dev Environment:**
 ```bash
-cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars is already configured for dev
+# Just run terraform apply - it will automatically use terraform.tfvars in the same directory
+terraform apply
 ```
 
-Edit `terraform.tfvars` with your values:
-```hcl
-project_name  = "awsmqttpoc"
-environment   = "dev"
-aws_region    = "us-east-1"
-jenkins_instance_type = "t3.medium"
-assign_elastic_ip = true
-```
+**For other environments:**
+Create environment-specific tfvars files (e.g., `terraform.tfvars.prod`) or use environment variables (`TF_VAR_*`).
+
+**Note**: Each module should have its own tfvars file to avoid warnings about undeclared variables. Use shared/environment tfvars only when variables are truly shared across multiple modules.
 
 ### 3. Deploy Jenkins
 

@@ -14,6 +14,41 @@ jenkins_idle_timeout = 900  # 15 minutes in seconds (900)
 # Network configuration
 assign_elastic_ip = true    # Keep same IP when stopped/started (recommended)
 
+# EBS encryption (set to false to avoid KMS permission issues in dev)
+encrypt_ebs = false  # Set to true for production (requires KMS permissions)
+
+# EBS volume type
+ebs_volume_type = "gp3"  # gp3, gp2, io1, etc.
+
+# Jenkins port
+jenkins_port = 8080
+
+# Auto-stop configuration
+auto_stop_check_interval = 60  # Check interval in seconds
+
+# Terraform state configuration (for remote state)
+terraform_state_bucket = "awsmqttpoc-terraform-state"
+terraform_state_key = "shared/networking/terraform.tfstate"
+
 # SSH access (optional - leave empty if not needed)
 key_pair_name = ""  # e.g., "my-key-pair" if you want SSH access
+
+# ============================================================================
+# SECURITY-SENSITIVE VARIABLES (CIDR BLOCKS)
+# ============================================================================
+# 
+# For DEV environment:
+#   - Set directly in terraform.tfvars (already configured above)
+#   - Run: terraform apply
+#
+# For PROD environment:
+#   - DO NOT commit CIDR blocks to terraform.tfvars!
+#   - Set via environment variables:
+#     export TF_VAR_jenkins_web_cidr_blocks='["10.0.0.0/8","192.168.1.0/24"]'
+#     export TF_VAR_jenkins_ssh_cidr_blocks='["10.0.0.0/8"]'
+#   - Then: terraform apply
+#
+# Or create environment-specific files:
+#   - terraform.tfvars.dev (for dev - can commit)
+#   - terraform.tfvars.prod (for prod - gitignored, use env vars instead)
 

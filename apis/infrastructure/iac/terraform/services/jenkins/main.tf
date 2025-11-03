@@ -16,15 +16,20 @@ terraform {
   }
 }
 
+# Local values for remote state configuration (using variables)
+locals {
+  remote_state_config = {
+    bucket  = var.terraform_state_bucket
+    key     = var.terraform_state_key
+    region  = var.aws_region
+    profile = var.aws_profile
+  }
+}
+
 # Get remote state from networking
 data "terraform_remote_state" "networking" {
   backend = "s3"
-  config = {
-    bucket = "awsmqttpoc-terraform-state"
-    key    = "shared/networking/terraform.tfstate"
-    region = "us-east-1"
-    profile = "cicd_bot"
-  }
+  config  = local.remote_state_config
 }
 
 provider "aws" {
@@ -39,12 +44,22 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hub/ubuntu-jammy-22.04-amd64-server-*"]
+    values = ["ubuntu/images/*/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
   }
 }
 
@@ -165,10 +180,11 @@ region = ${var.aws_region}
 AWSCONFIG
 
 # Create auto-stop script
-cat > /opt/jenkins-auto-stop.sh <<'AUTOSTOP'
+cat > /opt/jenkins-auto-stop.sh <<AUTOSTOP
 #!/bin/bash
 IDLE_TIMEOUT=${var.jenkins_idle_timeout}
-CHECK_INTERVAL=60
+CHECK_INTERVAL=${var.auto_stop_check_interval}
+JENKINS_PORT=${var.jenkins_port}
 
 INSTANCE_ID=$(ec2-metadata --instance-id | cut -d " " -f 2)
 REGION=$(ec2-metadata --availability-zone | cut -d " " -f 2 | sed 's/[a-z]$//')
@@ -177,10 +193,10 @@ while true; do
     sleep $CHECK_INTERVAL
     
     # Check if Jenkins has active builds
-    ACTIVE_BUILDS=$(curl -s http://localhost:8080/computer/api/json 2>/dev/null | jq -r '.computer[0].executors[] | select(.currentExecutable != null) | .currentExecutable.url' | wc -l || echo "0")
+    ACTIVE_BUILDS=$(curl -s http://localhost:$JENKINS_PORT/computer/api/json 2>/dev/null | jq -r '.computer[0].executors[] | select(.currentExecutable != null) | .currentExecutable.url' | wc -l || echo "0")
     
     # Check if Jenkins has queued builds
-    QUEUED_BUILDS=$(curl -s http://localhost:8080/queue/api/json 2>/dev/null | jq -r '.items | length' || echo "0")
+    QUEUED_BUILDS=$(curl -s http://localhost:$JENKINS_PORT/queue/api/json 2>/dev/null | jq -r '.items | length' || echo "0")
     
     if [ "$ACTIVE_BUILDS" -gt 0 ] || [ "$QUEUED_BUILDS" -gt 0 ]; then
         echo "$(date): Active builds detected, resetting timer"
@@ -247,7 +263,7 @@ echo "" >> /var/log/jenkins-setup.log
 
 # Wait for Jenkins to be fully ready
 for i in {1..60}; do
-    if curl -s http://localhost:8080 | grep -q "Jenkins"; then
+    if curl -s http://localhost:${var.jenkins_port} | grep -q "Jenkins"; then
         echo "Jenkins is ready!" >> /var/log/jenkins-setup.log
         break
     fi
@@ -264,10 +280,10 @@ resource "aws_security_group" "jenkins" {
 
   ingress {
     description = "Jenkins Web UI"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = var.jenkins_port
+    to_port     = var.jenkins_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Restrict to your IP in production: ["YOUR_IP/32"]
+    cidr_blocks = var.jenkins_web_cidr_blocks
   }
 
   ingress {
@@ -275,7 +291,7 @@ resource "aws_security_group" "jenkins" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Restrict to your IP in production
+    cidr_blocks = var.jenkins_ssh_cidr_blocks
   }
 
   egress {
@@ -305,9 +321,9 @@ resource "aws_instance" "jenkins" {
   user_data              = base64encode(local.user_data)
 
   root_block_device {
-    volume_type = "gp3"
+    volume_type = var.ebs_volume_type
     volume_size = var.jenkins_volume_size
-    encrypted   = true
+    encrypted   = var.encrypt_ebs
   }
 
   tags = {
