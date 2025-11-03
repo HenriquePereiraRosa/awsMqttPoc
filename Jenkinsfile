@@ -10,7 +10,7 @@ pipeline {
     environment {
         PROJECT_ROOT = "${WORKSPACE}"
         JAVA_HOME = '/opt/java/openjdk'
-        MAVEN_OPTS = '-Xmx2048m -XX:MaxPermSize=512m'
+        MAVEN_OPTS = '-Xmx2048m'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
     }
     
