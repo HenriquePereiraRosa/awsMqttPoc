@@ -4,6 +4,22 @@
 # 2. Builds only the changed modules and their dependencies
 # 3. Runs tests for changed modules on PRs (open and updates)
 
+# Java Build and Test Workflow
+# 
+# AWS MQTT POC - CI/CD Pipeline
+# This workflow provides additional CI/CD coverage alongside Jenkins
+# 
+# Project Info:
+# - Project: AWS MQTT Proof of Concept
+# - Main Service: MQTT over TLS for IoT device communication
+# - Additional Services: Order Service (Spring Boot), Kafka integration
+# - Infrastructure: AWS IoT Core, Terraform IaC, Docker
+#
+# This workflow:
+# 1. Detects changes in any module (order-service, common, infrastructure)
+# 2. Builds only the changed modules and their dependencies
+# 3. Runs tests for changed modules on PRs (open and updates)
+
 name: Java Build and Test
 
 # Trigger only on Pull Requests
@@ -23,10 +39,44 @@ env:
   MAVEN_VERSION: '3.9.5'
 
 jobs:
+  # Step 0: Display project information
+  project-info:
+    name: 📋 Project Information
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Project Info
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 AWS MQTT POC - Continuous Integration"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "🔹 Project: AWS MQTT Proof of Concept"
+          echo "🔹 Purpose: IoT device communication via MQTT over TLS"
+          echo "🔹 Main Services:"
+          echo "   • MQTT Service (AWS IoT Core integration)"
+          echo "   • Order Service (Spring Boot microservice)"
+          echo "   • Kafka integration (message buffering)"
+          echo ""
+          echo "🔹 Technology Stack:"
+          echo "   • Java 21 (OpenJDK/Temurin)"
+          echo "   • Spring Boot 3.5.4"
+          echo "   • Maven 3.9+"
+          echo "   • AWS IoT Core"
+          echo "   • Apache Kafka"
+          echo "   • PostgreSQL (with Testcontainers)"
+          echo "   • Terraform (Infrastructure as Code)"
+          echo ""
+          echo "🔹 CI/CD:"
+          echo "   • Primary: Jenkins (local Docker setup)"
+          echo "   • Secondary: GitHub Actions (this workflow)"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
   # Step 1: Detect which modules have changed
   detect-changes:
-    name: Detect Changed Modules
+    name: 🔍 Detect Changed Modules
     runs-on: ubuntu-latest
+    needs: project-info
     # Outputs which modules have changed
     outputs:
       order-service: ${{ steps.filter.outputs.order-service }}
@@ -86,12 +136,11 @@ jobs:
 
   # Step 2: Build and test changed modules
   build-and-test:
-    name: Build and Test
+    name: 🔨 Build and Test
+    needs: detect-changes
     runs-on: ubuntu-latest
     # Only run if there are changes detected
     if: needs.detect-changes.outputs.has-changes != '[]' && needs.detect-changes.outputs.has-changes != ''
-    # This job needs the detect-changes job to complete first
-    needs: detect-changes
     
     # Docker service for tests that need Docker (Testcontainers, etc.)
     services:

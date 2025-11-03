@@ -1,7 +1,17 @@
-name: Terraform Infrastructure
+# Terraform Infrastructure Deployment
+# 
+# NOTE: This workflow is manually triggered (workflow_dispatch)
+# For CI/CD, consider using Jenkins or other automation
+#
+# This workflow allows manual Terraform operations:
+# - Bootstrap S3 bucket creation
+# - Deploy/destroy infrastructure services
+# - Plan/apply/destroy operations
+
+name: Terraform Infrastructure (Manual)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
     inputs:
       environment:
         description: 'Environment'

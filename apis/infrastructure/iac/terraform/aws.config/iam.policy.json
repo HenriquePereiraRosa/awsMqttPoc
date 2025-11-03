@@ -198,8 +198,8 @@
         "kms:RevokeGrant"
       ],
       "Resource": [
-        "arn:aws:kms:us-east-1:912263374911:key/*",
-        "arn:aws:kms:us-east-1:912263374911:alias/aws/ebs"
+        "arn:aws:kms:us-east-1:YOUR_ACCOUNT_ID:key/*",
+        "arn:aws:kms:us-east-1:YOUR_ACCOUNT_ID:alias/aws/ebs"
       ],
       "Condition": {
         "StringEquals": {

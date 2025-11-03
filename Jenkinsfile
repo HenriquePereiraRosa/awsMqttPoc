@@ -1,21 +1,3 @@
-/**
- * Professional Jenkins Pipeline for AWS MQTT POC
- * 
- * Features:
- * - Change detection (builds only changed modules)
- * - Unit & Integration tests (with Testcontainers)
- * - Code coverage reporting (using Coverage Plugin)
- * - HTML test reports
- * - Docker support for tests
- * - Parallel execution
- * - Comprehensive error handling
- * 
- * Prerequisites:
- * - Jenkins with Pipeline, Git, Maven, Docker plugins
- * - Coverage Plugin (replaces deprecated JaCoCo plugin)
- * - JDK 21, Maven 3.9 configured in Jenkins Global Tools
- * - Docker running (for Testcontainers)
- */
 
 pipeline {
     agent any
@@ -28,7 +10,6 @@ pipeline {
     environment {
         PROJECT_ROOT = "${WORKSPACE}"
         JAVA_HOME = '/opt/java/openjdk'
-        PATH = "/opt/java/openjdk/bin:${tool('maven-3.9')}/bin:${env.PATH}"
         MAVEN_OPTS = '-Xmx2048m -XX:MaxPermSize=512m'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
     }
@@ -54,24 +35,81 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('Project Information') {
+            steps {
                 script {
-                    // Get git info
-                    env.GIT_COMMIT = sh(
+                    // Get git info for display
+                    def gitCommit = sh(
                         script: 'git rev-parse HEAD',
                         returnStdout: true
                     ).trim()
-                    env.GIT_BRANCH = sh(
+                    def gitBranch = sh(
                         script: 'git rev-parse --abbrev-ref HEAD',
                         returnStdout: true
                     ).trim()
-                    env.GIT_AUTHOR = sh(
+                    def gitAuthor = sh(
                         script: 'git log -1 --pretty=format:"%an"',
                         returnStdout: true
                     ).trim()
+                    def gitMessage = sh(
+                        script: 'git log -1 --pretty=format:"%s"',
+                        returnStdout: true
+                    ).trim()
                     
-                    echo "Building commit: ${env.GIT_COMMIT}"
-                    echo "Branch: ${env.GIT_BRANCH}"
-                    echo "Author: ${env.GIT_AUTHOR}"
+                    // Check if this is a PR build (GitHub plugin provides CHANGE_ID)
+                    def isPR = env.CHANGE_ID != null
+                    def prInfo = ""
+                    if (isPR) {
+                        prInfo = """
+   • PR #${env.CHANGE_ID}: ${env.CHANGE_TITLE ?: gitMessage}
+   • PR Author: ${env.CHANGE_AUTHOR ?: gitAuthor}
+   • Target Branch: ${env.CHANGE_TARGET ?: 'main'}"""
+                    }
+                    
+                    echo """
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 AWS MQTT POC - Continuous Integration (Jenkins)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 Project: AWS MQTT Proof of Concept
+🔹 Purpose: IoT device communication via MQTT over TLS
+🔹 Main Services:
+   • MQTT Service (AWS IoT Core integration)
+   • Order Service (Spring Boot microservice)
+   • Kafka integration (message buffering)
+
+🔹 Technology Stack:
+   • Java 21 (OpenJDK/Temurin)
+   • Spring Boot 3.5.4
+   • Maven 3.9+
+   • AWS IoT Core
+   • Apache Kafka
+   • PostgreSQL (with Testcontainers)
+   • Terraform (Infrastructure as Code)
+
+🔹 CI/CD:
+   • Primary: Jenkins (local Docker setup)
+   • Secondary: GitHub Actions
+
+🔹 Build Information:
+   • Build Number: #${env.BUILD_NUMBER}
+   • Branch: ${gitBranch}
+   • Commit: ${gitCommit.take(7)}
+   • Commit Message: ${gitMessage}
+   • Author: ${gitAuthor}
+   • Build Type: ${isPR ? 'Pull Request' : 'Branch Build'}${prInfo}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+                    
+                    // Store for later use
+                    env.GIT_COMMIT = gitCommit
+                    env.GIT_BRANCH = gitBranch
+                    env.GIT_AUTHOR = gitAuthor
+                    env.IS_PR = isPR.toString()
                 }
             }
         }
