@@ -21,6 +21,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+		<maven-surefire-report-plugin.version>3.5.4</maven-surefire-report-plugin.version>
 
 		<kafka-producer.version>1.0.0</kafka-producer.version>
 		<kafka-consumer.version>1.0.0</kafka-consumer.version>
@@ -337,7 +338,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>3.2.7</version>
+				<version>${maven-surefire-report-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>generate-test-report</id>
