@@ -102,6 +102,10 @@
         "iam:DetachRolePolicy",
         "iam:ListAttachedRolePolicies",
         "iam:PassRole",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
         "iam:CreateInstanceProfile",
         "iam:DeleteInstanceProfile",
         "iam:GetInstanceProfile",
@@ -109,11 +113,15 @@
         "iam:AddRoleToInstanceProfile",
         "iam:RemoveRoleFromInstanceProfile",
         "iam:TagRole",
-        "iam:UntagRole"
+        "iam:UntagRole",
+        "iam:TagInstanceProfile",
+        "iam:UntagInstanceProfile"
       ],
       "Resource": [
         "arn:aws:iam::YOUR_ACCOUNT_ID:role/terraform-*",
-        "arn:aws:iam::YOUR_ACCOUNT_ID:instance-profile/terraform-*"
+        "arn:aws:iam::YOUR_ACCOUNT_ID:role/awsmqttpoc-*",
+        "arn:aws:iam::YOUR_ACCOUNT_ID:instance-profile/terraform-*",
+        "arn:aws:iam::YOUR_ACCOUNT_ID:instance-profile/awsmqttpoc-*"
       ]
     },
     {
@@ -176,6 +184,28 @@
         "arn:aws:s3:::awsmqttpoc-terraform-state",
         "arn:aws:s3:::awsmqttpoc-terraform-state/*"
       ]
+    },
+    {
+      "Sid": "TerraformKMSMinimal",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey",
+        "kms:CreateGrant",
+        "kms:ListGrants",
+        "kms:RevokeGrant"
+      ],
+      "Resource": [
+        "arn:aws:kms:us-east-1:YOUR_ACCOUNT_ID:key/*",
+        "arn:aws:kms:us-east-1:YOUR_ACCOUNT_ID:alias/aws/ebs"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
     }
   ]
 }

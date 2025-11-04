@@ -1,0 +1,249 @@
+name: Start Jenkins on PR (Optional - On-Demand Jenkins)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  start-jenkins:
+    name: Start Jenkins Instance
+    runs-on: ubuntu-latest
+    # Only run if you want on-demand Jenkins (comment out otherwise)
+    if: false  # Set to 'true' to enable this workflow
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Check Jenkins instance status
+        id: check-status
+        run: |
+          STATUS=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text)
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "Current status: $STATUS"
+
+      - name: Start Jenkins instance if stopped
+        if: steps.check-status.outputs.status == 'stopped'
+        run: |
+          echo "🚀 Starting Jenkins instance..."
+          aws ec2 start-instances \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }}
+          
+          echo "⏳ Waiting for instance to be running..."
+          aws ec2 wait instance-running \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }}
+          
+          # Get instance public IP
+          IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          
+          echo "✅ Instance started! Public IP: $IP"
+          echo "⏳ Waiting for Jenkins web UI to be ready (this may take 2-3 minutes)..."
+          
+          # Wait for Jenkins web UI to be ready
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              http://$IP:8080 || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ]; then
+              echo "✅ Jenkins is ready! Access at: http://$IP:8080"
+              break
+            fi
+            
+            if [ $i -eq 60 ]; then
+              echo "⚠️ Jenkins may not be fully ready yet, but instance is running"
+            else
+              echo "   Attempt $i/60: HTTP $HTTP_CODE (waiting...)"
+              sleep 5
+            fi
+          done
+
+      - name: Instance already running
+        if: steps.check-status.outputs.status == 'running'
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "ℹ️ Jenkins instance is already running at: http://$IP:8080"
+
+      - name: Get Jenkins URL
+        id: jenkins-url
+        if: steps.check-status.outputs.status == 'running'
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.JENKINS_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "url=http://$IP:8080" >> $GITHUB_OUTPUT
+          echo "ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Trigger Jenkins build and wait for completion
+        id: jenkins-build
+        if: steps.check-status.outputs.status == 'running'
+        run: |
+          JENKINS_URL="${{ steps.jenkins-url.outputs.url }}"
+          JOB_NAME="${{ secrets.JENKINS_JOB_NAME }}"  # e.g., "your-project-pipeline"
+          
+          # Get CSRF token
+          CRUMB=$(curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,\":\",//crumb)")
+          
+          # Trigger build
+          echo "🚀 Triggering Jenkins build: $JOB_NAME"
+          BUILD_URL=$(curl -s -X POST \
+            -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            -H "$CRUMB" \
+            "$JENKINS_URL/job/$JOB_NAME/build?token=${{ secrets.JENKINS_BUILD_TOKEN }}" \
+            -i | grep -i "Location:" | cut -d' ' -f2 | tr -d '\r')
+          
+          # Extract queue item ID
+          QUEUE_ID=$(echo $BUILD_URL | grep -o '/queue/item/[0-9]*' | grep -o '[0-9]*')
+          
+          if [ -z "$QUEUE_ID" ]; then
+            echo "❌ Failed to trigger build or get queue ID"
+            exit 1
+          fi
+          
+          echo "⏳ Build queued. Queue ID: $QUEUE_ID"
+          echo "queue_id=$QUEUE_ID" >> $GITHUB_OUTPUT
+          
+          # Wait for build to start (queue item becomes executable)
+          echo "⏳ Waiting for build to start..."
+          BUILD_NUMBER=""
+          for i in {1..60}; do
+            QUEUE_STATUS=$(curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+              "$JENKINS_URL/queue/item/$QUEUE_ID/api/json" | jq -r '.executable.url // empty')
+            
+            if [ -n "$QUEUE_STATUS" ]; then
+              BUILD_NUMBER=$(echo $QUEUE_STATUS | grep -o '[0-9]*$')
+              echo "✅ Build started! Build number: $BUILD_NUMBER"
+              echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+              break
+            fi
+            
+            if [ $i -eq 60 ]; then
+              echo "❌ Timeout waiting for build to start"
+              exit 1
+            fi
+            
+            sleep 2
+          done
+          
+          # Wait for build to complete
+          echo "⏳ Waiting for build to complete (this may take several minutes)..."
+          BUILD_STATUS=""
+          for i in {1..300}; do  # Wait up to 50 minutes
+            BUILD_INFO=$(curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+              "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/api/json")
+            
+            BUILD_STATUS=$(echo $BUILD_INFO | jq -r '.building')
+            
+            if [ "$BUILD_STATUS" = "false" ]; then
+              RESULT=$(echo $BUILD_INFO | jq -r '.result')
+              echo "✅ Build completed! Result: $RESULT"
+              echo "result=$RESULT" >> $GITHUB_OUTPUT
+              break
+            fi
+            
+            if [ $i -eq 300 ]; then
+              echo "⚠️ Timeout waiting for build to complete"
+              echo "result=TIMEOUT" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            
+            # Show progress every 30 seconds
+            if [ $((i % 6)) -eq 0 ]; then
+              echo "   Still building... ($((i * 2)) seconds elapsed)"
+            fi
+            
+            sleep 2
+          done
+
+      - name: Download test reports from Jenkins
+        if: steps.jenkins-build.outputs.build_number != ''
+        run: |
+          JENKINS_URL="${{ steps.jenkins-url.outputs.url }}"
+          JOB_NAME="${{ secrets.JENKINS_JOB_NAME }}"
+          BUILD_NUMBER="${{ steps.jenkins-build.outputs.build_number }}"
+          
+          mkdir -p jenkins-reports
+          
+          echo "📥 Downloading test reports from Jenkins..."
+          
+          # Download Surefire test reports
+          curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/testReport/api/json" \
+            -o jenkins-reports/test-report.json || echo "No test report API available"
+          
+          # Download coverage reports (if available)
+          curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/cobertura/api/json" \
+            -o jenkins-reports/coverage-report.json || echo "No coverage report API available"
+          
+          # Download artifacts (test results, HTML reports, etc.)
+          echo "📥 Downloading build artifacts..."
+          ARTIFACTS_JSON=$(curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/api/json?tree=artifacts[*]")
+          
+          # Download each artifact
+          echo $ARTIFACTS_JSON | jq -r '.artifacts[]? | "\(.fileName) \(.relativePath)"' | while read -r filename relativepath; do
+            if [ -n "$filename" ] && [ -n "$relativepath" ]; then
+              echo "  Downloading: $filename"
+              mkdir -p "jenkins-reports/artifacts/$(dirname "$relativepath")"
+              curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+                "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/artifact/$relativepath" \
+                -o "jenkins-reports/artifacts/$relativepath" || true
+            fi
+          done
+          
+          # Also try to download common report locations
+          echo "📥 Downloading common report locations..."
+          
+          # Surefire reports
+          curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/artifact/**/target/surefire-reports/*.xml" \
+            -o jenkins-reports/surefire-reports.zip || true
+          
+          # JaCoCo reports
+          curl -s -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+            "$JENKINS_URL/job/$JOB_NAME/$BUILD_NUMBER/artifact/**/target/site/jacoco/index.html" \
+            -o jenkins-reports/jacoco-index.html || true
+          
+          # List downloaded files
+          echo "✅ Downloaded files:"
+          find jenkins-reports -type f | head -20
+
+      - name: Upload reports to GitHub Actions artifacts
+        if: steps.jenkins-build.outputs.build_number != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jenkins-reports-${{ steps.jenkins-build.outputs.build_number }}
+          path: jenkins-reports/**
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Display build summary
+        if: always() && steps.jenkins-build.outputs.build_number != ''
+        run: |
+          echo "## 📊 Jenkins Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number**: ${{ steps.jenkins-build.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.jenkins-build.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Jenkins URL**: ${{ steps.jenkins-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Reports uploaded as artifact: \`jenkins-reports-${{ steps.jenkins-build.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.jenkins-build.outputs.result }}" != "SUCCESS" ]; then
+            echo "❌ Build failed! Check Jenkins logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
+

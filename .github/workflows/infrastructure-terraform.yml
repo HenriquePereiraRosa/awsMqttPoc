@@ -1,7 +1,17 @@
-name: Terraform Infrastructure
+# Terraform Infrastructure Deployment
+# 
+# NOTE: This workflow is manually triggered (workflow_dispatch)
+# For CI/CD, consider using Jenkins or other automation
+#
+# This workflow allows manual Terraform operations:
+# - Bootstrap S3 bucket creation
+# - Deploy/destroy infrastructure services
+# - Plan/apply/destroy operations
+
+name: Terraform Infrastructure (Manual)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
     inputs:
       environment:
         description: 'Environment'
@@ -31,6 +41,7 @@ on:
           - bootstrap
           - networking
           - mqtt
+          - jenkins
 
 env:
   TF_VERSION: '1.6.0'
@@ -84,10 +95,27 @@ jobs:
           terraform init
           terraform ${{ github.event.inputs.action }} -auto-approve
 
+      - name: Deploy Jenkins Service
+        if: github.event.inputs.service == 'jenkins' || github.event.inputs.service == 'all'
+        working-directory: apis/infrastructure/iac/terraform/services/jenkins
+        run: |
+          terraform init
+          terraform ${{ github.event.inputs.action }} -auto-approve
+
       - name: Terraform Output
         if: github.event.inputs.action != 'destroy'
         run: |
           echo "✅ Infrastructure ${{ github.event.inputs.action }} completed successfully"
+          
+          # Output Jenkins details if deployed
+          if [ "${{ github.event.inputs.service }}" == "jenkins" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+            echo ""
+            echo "=== Jenkins Deployment Details ==="
+            cd apis/infrastructure/iac/terraform/services/jenkins || true
+            terraform output jenkins_instance_id || echo "Jenkins not deployed"
+            terraform output jenkins_url || echo "Jenkins URL not available"
+            terraform output jenkins_public_ip || echo "Jenkins IP not available"
+          fi
 
 
 

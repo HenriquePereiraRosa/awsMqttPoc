@@ -10,6 +10,8 @@ override.tf.json
 *_override.tf.json
 terraform.tfvars
 *.auto.tfvars
+*.tfvars.local
+**/*.tfvars.local
 
 # Do commit the lock file for reproducible builds
 # !.terraform.lock.hcl

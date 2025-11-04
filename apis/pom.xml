@@ -21,6 +21,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+		<maven-surefire-report-plugin.version>3.5.4</maven-surefire-report-plugin.version>
 
 		<kafka-producer.version>1.0.0</kafka-producer.version>
 		<kafka-consumer.version>1.0.0</kafka-consumer.version>
@@ -288,6 +289,24 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M5</version>
+				<configuration>
+					<!-- Include integration tests (*IT.java) in addition to unit tests -->
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+						<include>**/*IT.java</include>
+					</includes>
+					<!-- Generate HTML reports with detailed test information -->
+					<reportFormat>xml</reportFormat>
+					<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+						<disable>false</disable>
+						<version>3.0</version>
+						<usePhrasedFileName>false</usePhrasedFileName>
+						<usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+						<usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+						<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+					</statelessTestsetReporter>
+				</configuration>
 			</plugin>
 
 			<plugin>
@@ -303,11 +322,39 @@
 					</execution>
 					<execution>
 						<id>jacoco-report</id>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<!-- Generate HTML reports for code coverage -->
+							<outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
+						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+
+			<!-- Generate HTML reports for test results -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>${maven-surefire-report-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>generate-test-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-only</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- SonarQube/SonarCloud Code Analysis -->
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>3.11.0.3922</version>
 			</plugin>
 
 		</plugins>

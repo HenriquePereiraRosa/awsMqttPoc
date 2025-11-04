@@ -1,0 +1,260 @@
+/**
+ * Jenkins Pipeline equivalent to our GitHub Actions workflow
+ * 
+ * Prerequisites:
+ * - Jenkins with Pipeline plugin
+ * - Docker plugin (for Testcontainers support)
+ * - Git plugin
+ * - Maven tool configured in Jenkins (Manage Jenkins > Tools)
+ * - GitHub Branch Source plugin (for PR integration)
+ */
+
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9-eclipse-temurin-21'
+            args '-v /var/run/docker.sock:/var/run/docker.sock --privileged -v ${HOME}/.m2:/root/.m2'
+            reuseNode true
+        }
+    }
+
+    tools {
+        maven 'Maven-3.9' // Configure in Jenkins: Manage Jenkins > Tools
+    }
+
+    environment {
+        MAVEN_OPTS = '-Xmx1024m'
+        JAVA_HOME = tool 'JDK-21' // Configure JDK in Jenkins tools
+    }
+
+    triggers {
+        // Trigger on PR events (requires GitHub plugin)
+        githubPullRequest(
+            useGitHubHooks: true,
+            permitAll: true,
+            orgWhitelist: 'HenriquePereiraRosa',
+            allowWhitelistOrgAsAdmin: true,
+            extensions: [
+                [
+                    $class: 'GitHubPRBranchSpec',
+                    branch: 'main',
+                    compareTarget: 'main'
+                ]
+            ]
+        )
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Detect Changes') {
+            steps {
+                script {
+                    // Detect changed paths (equivalent to dorny/paths-filter)
+                    def changedFiles = sh(
+                        script: """
+                            git diff --name-only ${env.GIT_PREVIOUS_COMMIT ?: 'origin/main'} ${env.GIT_COMMIT} || echo ''
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    env.CHANGED_FILES = changedFiles
+                    
+                    // Determine which modules changed
+                    def commonChanged = changedFiles.contains('apis/common/') || changedFiles.contains('apis/pom.xml')
+                    def orderServiceChanged = changedFiles.contains('apis/order-service/')
+                    def infrastructureChanged = changedFiles.contains('apis/infrastructure/')
+
+                    env.BUILD_COMMON = commonChanged.toString()
+                    env.BUILD_ORDER_SERVICE = orderServiceChanged.toString()
+                    env.BUILD_INFRASTRUCTURE = infrastructureChanged.toString()
+                    env.BUILD_ALL = (commonChanged || (orderServiceChanged && infrastructureChanged)).toString()
+
+                    echo "Changed files: ${changedFiles}"
+                    echo "Build all: ${env.BUILD_ALL}"
+                    echo "Build order-service: ${env.BUILD_ORDER_SERVICE}"
+                    echo "Build infrastructure: ${env.BUILD_INFRASTRUCTURE}"
+                }
+            }
+        }
+
+        stage('Build and Test') {
+            parallel {
+                stage('Build All (if common changed)') {
+                    when {
+                        expression { env.BUILD_ALL == 'true' }
+                    }
+                    steps {
+                        dir('apis') {
+                            sh 'mvn clean verify'
+                        }
+                    }
+                }
+
+                stage('Build Order Service') {
+                    when {
+                        allOf {
+                            expression { env.BUILD_ALL != 'true' }
+                            expression { env.BUILD_ORDER_SERVICE == 'true' }
+                            expression { env.BUILD_INFRASTRUCTURE != 'true' }
+                        }
+                    }
+                    steps {
+                        dir('apis') {
+                            sh 'mvn clean verify -pl order-service -am'
+                        }
+                    }
+                }
+
+                stage('Build Infrastructure') {
+                    when {
+                        allOf {
+                            expression { env.BUILD_ALL != 'true' }
+                            expression { env.BUILD_INFRASTRUCTURE == 'true' }
+                            expression { env.BUILD_ORDER_SERVICE != 'true' }
+                        }
+                    }
+                    steps {
+                        dir('apis') {
+                            sh 'mvn clean verify -pl infrastructure -am'
+                        }
+                    }
+                }
+
+                stage('Build Both') {
+                    when {
+                        allOf {
+                            expression { env.BUILD_ALL != 'true' }
+                            expression { env.BUILD_ORDER_SERVICE == 'true' }
+                            expression { env.BUILD_INFRASTRUCTURE == 'true' }
+                        }
+                    }
+                    steps {
+                        dir('apis') {
+                            sh 'mvn clean verify -pl order-service,infrastructure -am'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Generate Reports') {
+            steps {
+                dir('apis') {
+                    // Generate Surefire HTML reports
+                    sh 'mvn surefire-report:report-only || true'
+                    
+                    // JaCoCo reports are already generated during verify phase
+                    sh 'mvn jacoco:report || true'
+                }
+            }
+        }
+
+        stage('Publish Test Results') {
+            steps {
+                // Publish JUnit test results (creates trend graphs)
+                junit '**/target/surefire-reports/*.xml'
+            }
+        }
+
+        stage('Publish Coverage') {
+            steps {
+                // Publish JaCoCo coverage (creates trend graphs)
+                script {
+                    def jacocoFile = findFiles(glob: '**/target/site/jacoco/jacoco.xml')
+                    if (jacocoFile.length > 0) {
+                        jacoco(
+                            execPattern: '**/target/**/*.exec',
+                            classPattern: '**/target/classes',
+                            sourcePattern: '**/src/main/java',
+                            exclusionPattern: '**/test/**',
+                            changeBuildStatus: false
+                        )
+                    }
+                }
+            }
+        }
+
+        stage('Publish HTML Reports') {
+            steps {
+                script {
+                    // Publish Surefire HTML reports
+                    publishHTML([
+                        reportName: 'Test Results',
+                        reportDir: '.',
+                        reportFiles: '**/target/site/surefire-report.html',
+                        reportTitles: 'Test Execution Report',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true
+                    ])
+
+                    // Publish JaCoCo HTML reports
+                    publishHTML([
+                        reportName: 'Code Coverage',
+                        reportDir: '.',
+                        reportFiles: '**/target/site/jacoco/index.html',
+                        reportTitles: 'JaCoCo Code Coverage',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true
+                    ])
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Archive artifacts
+            archiveArtifacts artifacts: '**/target/surefire-reports/**,**/target/site/**', 
+                             allowEmptyArchive: true,
+                             fingerprint: true
+
+            // Generate test summary
+            script {
+                def testSummary = """
+                <h2>📊 Test Results Summary</h2>
+                <p>Changed Files: ${env.CHANGED_FILES ?: 'N/A'}</p>
+                <p>Build Strategy: ${env.BUILD_ALL == 'true' ? 'All modules' : 'Selective'}</p>
+                <p>View detailed reports in the build artifacts above.</p>
+                """
+                
+                writeFile file: 'test-summary.html', text: testSummary
+                publishHTML([
+                    reportName: 'Test Summary',
+                    reportDir: '.',
+                    reportFiles: 'test-summary.html',
+                    reportTitles: 'Test Summary',
+                    keepAll: true
+                ])
+            }
+        }
+
+        success {
+            echo '✅ Build and tests successful!'
+        }
+
+        failure {
+            echo '❌ Build or tests failed!'
+        }
+
+        unstable {
+            echo '⚠️ Build is unstable (some tests failed)'
+        }
+    }
+
+    options {
+        // Keep only last 10 builds to save disk space
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        
+        // Add timestamps to console output
+        timestamps()
+        
+        // Add ANSI color support
+        ansiColor('xterm')
+    }
+}
+
